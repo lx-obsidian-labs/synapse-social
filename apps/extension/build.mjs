@@ -41,6 +41,11 @@ function replacePlaceholder(content) {
     .replace(/__NVIDIA_API_KEY__/g, NVIDIA_API_KEY)
 }
 
+function replaceAndWrite(srcPath, destPath) {
+  const content = readFileSync(srcPath, 'utf-8')
+  writeFileSync(destPath, replacePlaceholder(content))
+}
+
 async function copyAssets() {
   const distDir = resolve(__dirname, 'dist')
   const publicDir = resolve(__dirname, 'public')
@@ -48,8 +53,7 @@ async function copyAssets() {
 
   if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true })
 
-  const manifestSrc = readFileSync(resolve(__dirname, 'manifest.json'), 'utf-8')
-  writeFileSync(resolve(distDir, 'manifest.json'), replacePlaceholder(manifestSrc))
+  replaceAndWrite(resolve(__dirname, 'manifest.json'), resolve(distDir, 'manifest.json'))
 
   if (existsSync(publicDir)) {
     cpSync(publicDir, distDir, { recursive: true })
@@ -59,9 +63,16 @@ async function copyAssets() {
   for (const file of assetsWithPlaceholders) {
     const srcPath = resolve(srcDir, file)
     if (existsSync(srcPath)) {
-      let content = readFileSync(srcPath, 'utf-8')
-      content = replacePlaceholder(content)
-      writeFileSync(resolve(distDir, file), content)
+      replaceAndWrite(srcPath, resolve(distDir, file))
+    }
+  }
+
+  // Replace placeholders in esbuild bundled output
+  const bundledFiles = ['background.js', 'content.js']
+  for (const file of bundledFiles) {
+    const distPath = resolve(distDir, file)
+    if (existsSync(distPath)) {
+      replaceAndWrite(distPath, distPath)
     }
   }
 }
