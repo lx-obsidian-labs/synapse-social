@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const APP_URL = process.env.APP_URL || 'http://localhost:3000'
+const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY || ''
 const isWatch = process.argv.includes('--watch')
 
 async function build() {
@@ -35,7 +36,9 @@ async function build() {
 }
 
 function replacePlaceholder(content) {
-  return content.replace(/__APP_URL__/g, APP_URL)
+  return content
+    .replace(/__APP_URL__/g, APP_URL)
+    .replace(/__NVIDIA_API_KEY__/g, NVIDIA_API_KEY)
 }
 
 async function copyAssets() {

@@ -23,6 +23,13 @@
     .btn-primary:hover { background: #166FE5; }
     .btn-secondary { background: #E4E6EB; color: #050505; }
     .btn-secondary:hover { background: #D8DADE; }
+    .btn-icon { font-size: 16px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+    .badge-page { background: #E7F3FF; color: #1877F2; }
+    .badge-post { background: #E8F5E9; color: #42B72A; }
+    .badge-inbox { background: #FFF3E0; color: #F7B928; }
+    .badge-insights { background: #F3E5F5; color: #9C27B0; }
+    .badge-unknown { background: #F0F2F5; color: #65676B; }
     .section { margin-bottom: 8px; }
     .section-title { font-size: 11px; font-weight: 600; color: #65676B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding: 0 2px; }
     .actions { display: flex; flex-direction: column; gap: 6px; }
@@ -39,61 +46,144 @@
 
   <div class="body">
     <div class="card">
-      <div class="avatar">P</div>
+      <div class="avatar" id="page-avatar">P</div>
       <div class="info">
-        <div class="name" id="page-name">Synapse Social Page</div>
-        <div class="sub" id="page-status">Connected &middot; Admin</div>
+        <div class="name" id="page-name">Facebook Page</div>
+        <div class="sub" id="page-status">Detecting page...</div>
       </div>
     </div>
 
+    <div class="section" id="page-type-section">
+      <div class="section-title">Current Page</div>
+      <div id="page-type-display" style="margin-bottom:8px;"></div>
+    </div>
+
     <div class="section">
-      <div class="section-title">Quick Actions</div>
-      <div class="actions">
+      <div class="section-title">Actions</div>
+      <div class="actions" id="actions-container">
         <button class="btn btn-primary" id="open-panel">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
           Open Side Panel
-        </button>
-        <button class="btn btn-secondary" id="extract-data">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Extract Page Data
         </button>
       </div>
     </div>
   </div>
 
   <div class="footer">
-    <span id="notif-count">0 notifications</span>
+    <span id="notif-count">No notifications</span>
     <a id="settings-link">Settings</a>
   </div>
 
   <script>
+    const pageAvatar = document.getElementById('page-avatar')
     const pageName = document.getElementById('page-name')
     const pageStatus = document.getElementById('page-status')
+    const pageTypeDisplay = document.getElementById('page-type-display')
+    const actionsContainer = document.getElementById('actions-container')
     const openPanel = document.getElementById('open-panel')
-    const extractData = document.getElementById('extract-data')
     const settingsLink = document.getElementById('settings-link')
+
+    const pageActions = {
+      page: [
+        { label: '📊 Analyze Page', action: 'analyze' },
+        { label: '✍️ Generate Post', action: 'create-post' },
+        { label: '📈 View Insights', action: 'insights' },
+        { label: '💬 Manage Comments', action: 'comments' },
+      ],
+      post: [
+        { label: '📊 Analyze Engagement', action: 'analyze-post' },
+        { label: '🤖 AI Reply Suggestions', action: 'suggest-reply' },
+        { label: '🚀 Boost Post', action: 'boost' },
+      ],
+      inbox: [
+        { label: '⚡ Smart Reply', action: 'smart-reply' },
+        { label: '🤖 Auto Respond', action: 'auto-respond' },
+        { label: '📝 Conversation Summary', action: 'summary' },
+      ],
+      insights: [
+        { label: '🧠 AI Analysis', action: 'ai-analysis' },
+        { label: '💡 Recommendations', action: 'recommendations' },
+        { label: '📄 Generate Report', action: 'report' },
+      ],
+      group: [
+        { label: '📊 Analyze Group', action: 'analyze-group' },
+        { label: '💡 Content Ideas', action: 'suggest-content' },
+      ],
+      unknown: [
+        { label: '🔍 Detect Page', action: 'detect' },
+        { label: '🔧 Use Synapse', action: 'open' },
+      ],
+    }
+
+    const pageTypeLabels = {
+      page: 'Facebook Page', post: 'Post', inbox: 'Inbox',
+      insights: 'Insights', group: 'Group', unknown: 'Facebook',
+    }
+
+    const pageTypeBadges = {
+      page: 'badge-page', post: 'badge-post', inbox: 'badge-inbox',
+      insights: 'badge-insights', unknown: 'badge-unknown',
+    }
+
+    function updatePopup(pageType) {
+      const label = pageTypeLabels[pageType] || 'Facebook'
+      const badgeClass = pageTypeBadges[pageType] || 'badge-unknown'
+
+      pageTypeDisplay.innerHTML = `<span class="badge ${badgeClass}">${label}</span>`
+
+      const existingBtns = actionsContainer.querySelectorAll('.context-action')
+      existingBtns.forEach(b => b.remove())
+
+      const actions = pageActions[pageType] || pageActions.unknown
+      actions.forEach(a => {
+        const btn = document.createElement('button')
+        btn.className = 'btn btn-secondary context-action'
+        btn.textContent = a.label
+        btn.addEventListener('click', () => {
+          chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL' })
+          window.close()
+        })
+        actionsContainer.appendChild(btn)
+      })
+    }
 
     openPanel.addEventListener('click', () => {
       chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL' })
       window.close()
     })
 
-    extractData.addEventListener('click', () => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, { type: 'EXTRACT_PAGE_DATA' }, (response) => {
-            if (response?.success) {
-              pageName.textContent = response.data.pageTitle || 'Facebook Page'
-              pageStatus.textContent = 'Data extracted'
-            }
-          })
-        }
-      })
-    })
-
     settingsLink.addEventListener('click', () => {
       chrome.runtime.sendMessage({ type: 'OPEN_SIDEPANEL' })
       window.close()
+    })
+
+    // Detect page on popup open
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]?.id) {
+        pageStatus.textContent = 'No active tab'
+        return
+      }
+
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PAGE_TYPE' }, (response) => {
+        if (chrome.runtime.lastError || !response) {
+          pageStatus.textContent = 'Not on Facebook'
+          pageAvatar.textContent = '?'
+          updatePopup('unknown')
+          return
+        }
+
+        const pt = response.pageType || 'unknown'
+        pageStatus.textContent = `${pageTypeLabels[pt] || 'Facebook'}`
+        pageAvatar.textContent = (pageTypeLabels[pt] || 'F')[0]
+
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'EXTRACT_PAGE_DATA' }, (dataResp) => {
+          if (dataResp?.success && dataResp.data?.pageName) {
+            pageName.textContent = dataResp.data.pageName
+          }
+        })
+
+        updatePopup(pt)
+      })
     })
   </script>
 </body>

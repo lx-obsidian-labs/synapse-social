@@ -18,11 +18,8 @@
   "host_permissions": [
     "https://*.facebook.com/*",
     "https://*.meta.com/*",
-    "http://localhost:3000/*"
+    "https://integrate.api.nvidia.com/*"
   ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; frame-src __APP_URL__;"
-  },
   "background": {
     "service_worker": "background.js"
   },
