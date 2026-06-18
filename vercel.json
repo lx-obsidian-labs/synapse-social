@@ -1,6 +1,6 @@
 {
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "cd apps/web && npx next build",
+  "buildCommand": "pnpm --filter synapse-web build",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs"
 }
