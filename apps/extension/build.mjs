@@ -52,8 +52,8 @@ async function copyAssets() {
     cpSync(publicDir, distDir, { recursive: true })
   }
 
-  const htmlFiles = ['sidepanel.html', 'popup.html']
-  for (const file of htmlFiles) {
+  const assetsWithPlaceholders = ['sidepanel.html', 'popup.html', 'sidepanel.js']
+  for (const file of assetsWithPlaceholders) {
     const srcPath = resolve(srcDir, file)
     if (existsSync(srcPath)) {
       let content = readFileSync(srcPath, 'utf-8')

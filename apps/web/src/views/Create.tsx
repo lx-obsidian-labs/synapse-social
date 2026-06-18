@@ -13,15 +13,26 @@ export function CreatePage() {
   const [generated, setGenerated] = useState("")
   const [loading, setLoading] = useState(false)
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!prompt.trim()) return
     setLoading(true)
-    setTimeout(() => {
-      setGenerated(
-        `🎉 Exciting news!\n\nWe've been working hard behind the scenes, and we're finally ready to share what we've been building. ${prompt}\n\nStay tuned for more updates — this is just the beginning!\n\n#NewLaunch #ExcitingTimes #Innovation`
-      )
-      setLoading(false)
-    }, 1500)
+    setGenerated("")
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setGenerated(data.content)
+      } else {
+        setGenerated(`Error: ${data.error || "Generation failed"}`)
+      }
+    } catch {
+      setGenerated("Error: Could not reach the server")
+    }
+    setLoading(false)
   }
 
   function handleSelectTemplate(t: typeof templates[0]) {

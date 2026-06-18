@@ -31,7 +31,7 @@ export function AIPage() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
 
-  function handleSend() {
+  async function handleSend() {
     if (!input.trim() || loading) return
 
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: input }
@@ -39,27 +39,23 @@ export function AIPage() {
     setInput("")
     setLoading(true)
 
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        create: "I'd be happy to help you create a Facebook post! What topic would you like to cover? Tell me about your audience and the goal of the post, and I'll generate something tailored for you.",
-        analyze: "Based on your recent data, your engagement rate is up 12% this week. Your top-performing post was the product launch announcement. Would you like me to analyze a specific metric or period?",
-        comment: "I've analyzed your recent comments. Overall sentiment is 72% positive, 18% neutral, and 10% negative. There are 3 unresolved comments that need attention. Would you like me to draft replies?",
-        campaign: "Here are some campaign ideas based on your page:\n\n1. **Summer Launch Campaign** - Build anticipation with teaser posts\n2. **User Spotlight** - Feature customer success stories\n3. **Polls & Questions** - Boost engagement with interactive content\n4. **Behind the Scenes** - Show your team and process",
-      }
-
-      let response = "That's a great question! Let me think about it.\n\nBased on your page data and recent trends, I'd recommend focusing on video content this week. Your audience engagement is 3x higher on video posts compared to images.\n\nWould you like me to help you create a video post or analyze your top-performing content?"
-
-      for (const [key, val] of Object.entries(responses)) {
-        if (input.toLowerCase().includes(key)) {
-          response = val
-          break
-        }
-      }
-
-      const aiMsg: ChatMessage = { id: Date.now().toString() + "ai", role: "assistant", content: response }
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+        }),
+      })
+      const data = await res.json()
+      const reply = res.ok ? data.content : `Error: ${data.error || "Chat failed"}`
+      const aiMsg: ChatMessage = { id: Date.now().toString() + "ai", role: "assistant", content: reply }
       setMessages((prev) => [...prev, aiMsg])
-      setLoading(false)
-    }, 1200)
+    } catch {
+      const aiMsg: ChatMessage = { id: Date.now().toString() + "ai", role: "assistant", content: "Error: Could not reach the server" }
+      setMessages((prev) => [...prev, aiMsg])
+    }
+    setLoading(false)
   }
 
   return (
