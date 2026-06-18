@@ -494,6 +494,143 @@ function broadcastPageData() {
   chrome.runtime.sendMessage({ type: 'PAGE_DATA_RESPONSE', payload: collectPageData() })
 }
 
+// --- Tool Execution ---
+
+interface ToolResult {
+  success: boolean
+  result?: string
+  error?: string
+}
+
+const tools: Record<string, (args: string[]) => ToolResult> = {
+  scroll_to_bottom() {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+    return { success: true, result: 'Scrolled to bottom' }
+  },
+
+  scroll_to_top() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return { success: true, result: 'Scrolled to top' }
+  },
+
+  get_page_text() {
+    const text = document.body.innerText
+    const truncated = text.length > 3000 ? text.slice(0, 3000) + '...' : text
+    return { success: true, result: truncated }
+  },
+
+  click_like() {
+    const btns = document.querySelectorAll('[aria-label*="Like"i], [aria-label*="like"i]')
+    if (btns.length === 0) return { success: false, error: 'No like buttons found' }
+    ;(btns[0] as HTMLElement).click()
+    return { success: true, result: `Clicked like button (${btns.length} found)` }
+  },
+
+  click_comment() {
+    const btns = document.querySelectorAll('[aria-label*="Comment"i]')
+    if (btns.length === 0) return { success: false, error: 'No comment buttons found' }
+    ;(btns[0] as HTMLElement).click()
+    return { success: true, result: 'Opened comment section' }
+  },
+
+  click_share() {
+    const btns = document.querySelectorAll('[aria-label*="Share"i]')
+    if (btns.length === 0) return { success: false, error: 'No share buttons found' }
+    ;(btns[0] as HTMLElement).click()
+    return { success: true, result: 'Clicked share button' }
+  },
+
+  click_element(args) {
+    const selector = args[0]
+    if (!selector) return { success: false, error: 'No selector provided' }
+    try {
+      const el = document.querySelector(selector)
+      if (!el) return { success: false, error: `Element not found: ${selector}` }
+      ;(el as HTMLElement).click()
+      return { success: true, result: `Clicked: ${selector}` }
+    } catch {
+      return { success: false, error: `Invalid selector: ${selector}` }
+    }
+  },
+
+  fill_input(args) {
+    const selector = args[0]
+    const text = args.slice(1).join(' ')
+    if (!selector || !text) return { success: false, error: 'Usage: fill_input <selector> <text>' }
+    try {
+      const el = document.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement
+      if (!el) return { success: false, error: `Input not found: ${selector}` }
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 'value'
+      )?.set
+      nativeInputValueSetter?.call(el, text)
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+      return { success: true, result: `Filled "${text}" into ${selector}` }
+    } catch {
+      return { success: false, error: `Failed to fill: ${selector}` }
+    }
+  },
+
+  highlight_elements(args) {
+    const selector = args[0] || '[role="article"], article'
+    const els = document.querySelectorAll(selector)
+    els.forEach((el, i) => {
+      ;(el as HTMLElement).style.outline = '3px solid #1877F2'
+      ;(el as HTMLElement).style.outlineOffset = '2px'
+      const badge = document.createElement('div')
+      badge.className = 'synapse-toolbar-label'
+      badge.style.cssText = 'position:absolute;top:-18px;left:0;background:#1877F2;color:white;padding:1px 6px;border-radius:4px;font-size:10px;z-index:999;'
+      badge.textContent = `${i + 1}`
+      ;(el as HTMLElement).style.position = 'relative'
+      el.appendChild(badge)
+    })
+    setTimeout(() => {
+      els.forEach((el) => {
+        ;(el as HTMLElement).style.outline = ''
+        ;(el as HTMLElement).style.outlineOffset = ''
+        const badges = el.querySelectorAll('.synapse-toolbar-label')
+        badges.forEach((b) => b.remove())
+      })
+    }, 5000)
+    return { success: true, result: `Highlighted ${els.length} elements for 5s` }
+  },
+
+  like_first_post() {
+    const articles = document.querySelectorAll('[role="article"], article')
+    for (const article of articles) {
+      const likeBtn = article.querySelector('[aria-label*="Like"i], [aria-label*="like"i]')
+      if (likeBtn) {
+        ;(likeBtn as HTMLElement).click()
+        return { success: true, result: 'Liked the first post' }
+      }
+    }
+    return { success: false, error: 'No posts with like buttons found' }
+  },
+
+  get_visible_text() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
+    const parts: string[] = []
+    while (walker.nextNode()) {
+      const text = walker.currentNode.textContent?.trim()
+      if (text && text.length > 10) parts.push(text)
+    }
+    const full = parts.join('\n')
+    const truncated = full.length > 4000 ? full.slice(0, 4000) + '...' : full
+    return { success: true, result: truncated }
+  },
+}
+
+function executeTool(toolName: string, args: string[]): ToolResult {
+  const tool = tools[toolName]
+  if (!tool) return { success: false, error: `Unknown tool: ${toolName}. Available: ${Object.keys(tools).join(', ')}` }
+  try {
+    return tool(args)
+  } catch (err) {
+    return { success: false, error: `Tool ${toolName} failed: ${err}` }
+  }
+}
+
 // --- Messaging ---
 
 function listenForMessages() {
@@ -518,6 +655,10 @@ function listenForMessages() {
       case 'OPEN_ACTION_PANEL':
         togglePanel()
         sendResponse({ success: true })
+        break
+      case 'TOOL_EXECUTE':
+        const { tool, args } = message.payload || {}
+        sendResponse(executeTool(tool || '', args || []))
         break
     }
   })

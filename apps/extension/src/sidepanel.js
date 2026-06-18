@@ -73,8 +73,9 @@ async function sendChatMessage() {
     })
     removeTyping()
     if (response.success) {
-      addMessage('assistant', response.content)
-      chatHistory.push({ role: 'user', content: text }, { role: 'assistant', content: response.content })
+      const processed = await processToolCalls(response.content)
+      addMessage('assistant', processed.display)
+      chatHistory.push({ role: 'user', content: text }, { role: 'assistant', content: processed.historyContent })
     } else {
       addMessage('assistant', 'Error: ' + (response.error || 'Failed to get response'))
     }
@@ -86,6 +87,39 @@ async function sendChatMessage() {
   isGenerating = false
   chatSend.disabled = false
   scrollToBottom()
+}
+
+async function processToolCalls(content) {
+  const toolCallRegex = /\[TOOL:\s*(\w+)\s*(?::\s*(.*?))?\]/g
+  let match
+  let display = content
+  let historyContent = content
+  let hasToolCalls = false
+
+  while ((match = toolCallRegex.exec(content)) !== null) {
+    hasToolCalls = true
+    const toolName = match[1]
+    const argsStr = match[2] ? match[2].split('|').map(s => s.trim()) : []
+
+    addMessage('assistant', `🔧 Executing: ${toolName}...`)
+    scrollToBottom()
+
+    const result = await sendToBackground('TOOL_EXECUTE', { tool: toolName, args: argsStr })
+
+    const resultText = result.success
+      ? `✅ ${result.result || 'Done'}`
+      : `❌ ${result.error || 'Failed'}`
+
+    display = display.replace(match[0], `**${resultText}**`)
+    historyContent = historyContent.replace(match[0], `[Executed ${toolName}: ${result.success ? 'Success' : 'Failed'}]`)
+  }
+
+  if (hasToolCalls) {
+    addMessage('assistant', '✅ Tool execution complete')
+    scrollToBottom()
+  }
+
+  return { display, historyContent }
 }
 
 function addMessage(role, content) {
@@ -226,6 +260,42 @@ function escapeHtml(text) {
   div.textContent = text
   return div.innerHTML
 }
+
+// --- Tool buttons (Tools tab) ---
+
+const toolResult = $('tool-result')
+
+document.querySelectorAll('[data-tool]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const tool = btn.dataset.tool
+    toolResult.style.display = 'block'
+    toolResult.textContent = `⏳ Running ${tool}...`
+    const args = tool === 'highlight_elements' ? ['[role="article"], article'] : []
+    const result = await sendToBackground('TOOL_EXECUTE', { tool, args })
+    toolResult.textContent = result.success
+      ? `✅ ${result.result || 'Done'}`
+      : `❌ ${result.error || 'Failed'}`
+  })
+})
+
+$('tool-click-el').addEventListener('click', async () => {
+  const selector = $('tool-selector').value.trim()
+  if (!selector) return
+  toolResult.style.display = 'block'
+  toolResult.textContent = '⏳ Clicking...'
+  const result = await sendToBackground('TOOL_EXECUTE', { tool: 'click_element', args: [selector] })
+  toolResult.textContent = result.success ? `✅ ${result.result}` : `❌ ${result.error}`
+})
+
+$('tool-fill-btn').addEventListener('click', async () => {
+  const selector = $('tool-selector').value.trim()
+  const text = $('tool-fill-text').value
+  if (!selector || !text) return
+  toolResult.style.display = 'block'
+  toolResult.textContent = '⏳ Filling...'
+  const result = await sendToBackground('TOOL_EXECUTE', { tool: 'fill_input', args: [selector, text] })
+  toolResult.textContent = result.success ? `✅ ${result.result}` : `❌ ${result.error}`
+})
 
 // --- Init ---
 

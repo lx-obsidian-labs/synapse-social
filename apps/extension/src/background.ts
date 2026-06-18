@@ -13,6 +13,7 @@ interface SynapseMessage {
     | 'OPEN_ACTION_PANEL'
     | 'AI_CHAT'
     | 'AI_GENERATE'
+    | 'TOOL_EXECUTE'
   payload?: any
 }
 
@@ -46,7 +47,36 @@ async function handleAIChat(messages: any[]): Promise<{ success: boolean; conten
       body: JSON.stringify({
         model: 'meta/llama-3.1-8b-instruct',
         messages: [
-          { role: 'system', content: 'You are Synapse, an AI assistant specialized in Facebook Page management. Help users create content, analyze performance, manage comments, and optimize their social media strategy. Be concise, practical, and data-driven.' },
+          { role: 'system', content: `You are Synapse, an AI assistant specialized in Facebook Page management.
+
+You have the ability to CONTROL the Facebook page directly using tools. When the user asks you to perform an action on Facebook, you respond with the action using the format:
+
+[TOOL: tool_name: arg1 | arg2 | ...]
+
+Available tools:
+- scroll_to_bottom — Scroll page down
+- scroll_to_top — Scroll page up
+- get_page_text — Get visible page text
+- click_like — Click the first like button on the page
+- click_comment — Open the comment section
+- click_share — Click share button
+- like_first_post — Like the first post on the page
+- highlight_elements: selector — Highlight matching elements for 5s (default: articles)
+- click_element: css_selector — Click any element by CSS selector
+- fill_input: css_selector | text to type — Type text into an input field
+- get_visible_text — Get all visible text content from the page
+
+Examples:
+User: "like the first post"
+Assistant: [TOOL: like_first_post]
+
+User: "scroll down"
+Assistant: [TOOL: scroll_to_bottom]
+
+User: "type hello in the comment box"
+Assistant: [TOOL: fill_input: [aria-label*="comment"i] textarea | hello]
+
+Always explain what you're doing before using a tool. Be concise, practical, and data-driven.` },
           ...messages,
         ],
         max_tokens: 1024,
@@ -103,13 +133,13 @@ async function handleAIGenerate(prompt: string): Promise<{ success: boolean; con
 
 // --- Forward to Content Script ---
 
-function forwardToContentScript(type: string, sendResponse: (response: any) => void) {
+function forwardToContentScript(type: string, sendResponse: (response: any) => void, payload?: any) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (!tabs[0]?.id) {
       sendResponse({ success: false, error: 'No active tab' })
       return
     }
-    chrome.tabs.sendMessage(tabs[0].id, { type }, (response) => {
+    chrome.tabs.sendMessage(tabs[0].id, { type, payload }, (response) => {
       if (chrome.runtime.lastError) {
         sendResponse({ success: false, error: chrome.runtime.lastError.message })
         return
@@ -151,6 +181,11 @@ chrome.runtime.onMessage.addListener(
       case 'AI_GENERATE': {
         const prompt = message.payload?.prompt || ''
         handleAIGenerate(prompt).then(sendResponse)
+        return true
+      }
+
+      case 'TOOL_EXECUTE': {
+        forwardToContentScript('TOOL_EXECUTE', sendResponse, message.payload)
         return true
       }
 
