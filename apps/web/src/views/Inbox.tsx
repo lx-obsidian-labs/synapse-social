@@ -1,17 +1,31 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Filter, CheckCheck, Send, Sparkles } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Search, Send, Sparkles } from "lucide-react"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import { ConnectPrompt } from "@/components/connect-prompt"
+import { isExtensionContext } from "@/lib/extension-bridge"
 import { mockConversations, suggestedReplies } from "@/store"
 
 export function InboxPage() {
+  const inExtension = isExtensionContext()
+
+  if (!inExtension) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Inbox</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Manage your conversations</p>
+        <ConnectPrompt />
+      </div>
+    )
+  }
+
   const [activeTab, setActiveTab] = useState("all")
   const [selectedConv, setSelectedConv] = useState(mockConversations[0])
   const [reply, setReply] = useState("")

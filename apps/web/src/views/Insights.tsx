@@ -2,6 +2,8 @@
 
 import { TrendingUp, TrendingDown, Users, Eye, Heart, Share2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ConnectPrompt } from "@/components/connect-prompt"
+import { isExtensionContext } from "@/lib/extension-bridge"
 import { mockInsights, weeklyReach, engagementData } from "@/store"
 import {
   BarChart,
@@ -41,6 +43,18 @@ function MetricCard({ icon, label, value, change, positive }: { icon: React.Reac
 }
 
 export function InsightsPage() {
+  const inExtension = isExtensionContext()
+
+  if (!inExtension) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Insights</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Analytics and performance metrics</p>
+        <ConnectPrompt />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>

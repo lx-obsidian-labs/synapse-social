@@ -4,6 +4,8 @@ import { Clock, MessageSquare, TrendingUp, AlertCircle, Sparkles, ArrowRight } f
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ConnectPrompt } from "@/components/connect-prompt"
+import { isExtensionContext } from "@/lib/extension-bridge"
 import { mockComments, mockPosts, mockInsights } from "@/store"
 
 function StatCard({ label, value, trend }: { label: string; value: string; trend?: string }) {
@@ -25,6 +27,18 @@ function StatCard({ label, value, trend }: { label: string; value: string; trend
 }
 
 export function HomePage() {
+  const inExtension = isExtensionContext()
+
+  if (!inExtension) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">Home</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Your daily command center</p>
+        <ConnectPrompt />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
