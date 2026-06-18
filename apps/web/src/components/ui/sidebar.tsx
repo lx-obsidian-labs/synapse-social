@@ -5,6 +5,7 @@ import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_WIDTH = 260
+const SIDEBAR_COLLAPSED_WIDTH = 64
 
 type SidebarContextValue = {
   open: boolean
@@ -14,7 +15,7 @@ type SidebarContextValue = {
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null)
 
-function useSidebar() {
+export function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider")
@@ -74,13 +75,13 @@ export function Sidebar({ className, children, ...props }: React.HTMLAttributes<
   return (
     <div
       data-sidebar
+      data-collapsed={!open}
       className={cn(
         "flex h-screen flex-col border-r bg-sidebar text-sidebar-foreground transition-all duration-200",
         isMobile ? "fixed inset-y-0 left-0 z-50 shadow-lg" : "sticky top-0",
-        (open || isMobile) ? "" : "w-0 overflow-hidden border-r-0",
         className
       )}
-      style={{ width: open || isMobile ? SIDEBAR_WIDTH : 0, minWidth: open || isMobile ? SIDEBAR_WIDTH : 0 }}
+      style={{ width: isMobile ? SIDEBAR_WIDTH : (open ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH), minWidth: isMobile ? SIDEBAR_WIDTH : (open ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH) }}
       {...props}
     >
       {children}

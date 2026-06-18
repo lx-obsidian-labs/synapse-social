@@ -5,8 +5,23 @@ interface PageData {
   pageTitle: string
   pageType: 'page' | 'post' | 'group' | 'inbox' | 'insights' | 'unknown'
   pageId: string | null
-  postContent: string | null
+  pageName: string | null
+  followerCount: string | null
+  category: string | null
+  posts: PostData[]
   comments: CommentData[]
+  inboxCount: number
+  notifications: number
+}
+
+interface PostData {
+  id: string
+  content: string
+  image: string | null
+  likes: string
+  comments: string
+  shares: string
+  timestamp: string
 }
 
 interface CommentData {
@@ -24,7 +39,6 @@ let isSynapseActive = false
 // --- Init ---
 
 function init() {
-  detectFacebookPage()
   injectSynapseButton()
   setupMutationObserver()
   listenForMessages()
@@ -37,12 +51,165 @@ function detectFacebookPage(): PageData['pageType'] {
   const path = new URL(url).pathname
 
   if (path.match(/^\/(pages\/)?[^/]+\/?$/)) return 'page'
-  if (path.includes('/posts/') || path.includes('/photos/')) return 'post'
+  if (path.includes('/posts/') || path.includes('/photos/') || path.includes('/videos/')) return 'post'
   if (path.includes('/groups/')) return 'group'
   if (path.includes('/messages/') || path.includes('/inbox')) return 'inbox'
   if (path.includes('/insights') || path.includes('/analytics')) return 'insights'
 
   return 'unknown'
+}
+
+// --- Page Data Extraction ---
+
+function extractPageName(): string | null {
+  const selectors = [
+    'h1',
+    '[data-page-header] h1',
+    'meta[property="og:title"]',
+    'title',
+  ]
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el) {
+      if (el instanceof HTMLMetaElement) return el.getAttribute('content')
+      return el.textContent?.trim() || null
+    }
+  }
+  return null
+}
+
+function extractFollowerCount(): string | null {
+  const patterns = /([\d,.KMBTkmbt]+)\s*(follower|like|member)s?/i
+  const textNodes = document.body.innerText
+  const match = textNodes.match(patterns)
+  return match ? match[0].trim() : null
+}
+
+function extractCategory(): string | null {
+  const selectors = [
+    '[data-page-category]',
+    '[data-testid="page_category"]',
+  ]
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el) return el.textContent?.trim() || null
+  }
+  return null
+}
+
+function extractPosts(): PostData[] {
+  const posts: PostData[] = []
+  const articleSelectors = [
+    '[role="article"]',
+    'article',
+    '[data-ad-preview]',
+    '[data-pagelet^="FeedUnit"]',
+  ]
+
+  let articles: NodeListOf<Element> | null = null
+  for (const sel of articleSelectors) {
+    const found = document.querySelectorAll(sel)
+    if (found.length > 0) {
+      articles = found
+      break
+    }
+  }
+
+  if (articles) {
+    articles.forEach((el, i) => {
+      const contentEl = el.querySelector('[data-ad-comet-preview], [data-ad-preview], .xdj266r, .x1n2onr6, .x1iyjqo2')
+      const likeEl = el.querySelector('[aria-label*="Like"], [aria-label*="like"i], a[href*="reactions"]')
+      const commentEl = el.querySelector('[aria-label*="Comment"], [aria-label*="comment"i], a[href*="comment"]')
+      const shareEl = el.querySelector('[aria-label*="Share"], [aria-label*="share"i]')
+      const imgEl = el.querySelector('img[alt]:not([alt=""])')
+      const timeEl = el.querySelector('time, [data-utime], abbr')
+
+      posts.push({
+        id: `post_${i}_${Date.now()}`,
+        content: contentEl?.textContent?.trim() || '',
+        image: imgEl?.getAttribute('src') || null,
+        likes: likeEl?.textContent?.trim() || '0',
+        comments: commentEl?.textContent?.trim() || '0',
+        shares: shareEl?.textContent?.trim() || '0',
+        timestamp: timeEl?.getAttribute('datetime') || timeEl?.textContent?.trim() || '',
+      })
+    })
+  }
+
+  return posts
+}
+
+function extractComments(): CommentData[] {
+  const comments: CommentData[] = []
+  const commentBlocks = document.querySelectorAll('[data-commentid], [role="article"] [data-comment-body]')
+
+  commentBlocks.forEach((el) => {
+    const authorEl = el.querySelector('[data-hovercard], [data-testid="comment-author"], a[href*="/user/"]')
+    const contentEl = el.querySelector('[data-comment-body], [data-testid="comment-body"], .xdj266r')
+    comments.push({
+      id: el.getAttribute('data-commentid') || `c_${comments.length}`,
+      author: authorEl?.textContent?.trim() || 'Unknown',
+      content: contentEl?.textContent?.trim() || '',
+      timestamp: '',
+    })
+  })
+
+  return comments
+}
+
+function extractInboxCount(): number {
+  const badgeEls = document.querySelectorAll('[aria-label*="message"], [aria-label*="inbox"], [data-pagelet*="Inbox"]')
+  let count = 0
+  badgeEls.forEach((el) => {
+    const num = el.textContent?.match(/(\d+)/)
+    if (num) count += parseInt(num[1], 10)
+  })
+  return count
+}
+
+function extractNotifications(): number {
+  const badgeEls = document.querySelectorAll('[aria-label*="notification"], [data-pagelet*="Notifications"]')
+  let count = 0
+  badgeEls.forEach((el) => {
+    const num = el.textContent?.match(/(\d+)/)
+    if (num) count += parseInt(num[1], 10)
+  })
+  return count
+}
+
+function extractPageId(): string | null {
+  const selectors = [
+    '[data-pageid]',
+    'meta[property="al:android:url"]',
+    '[data-testid="page_id"]',
+  ]
+  for (const sel of selectors) {
+    const el = document.querySelector(sel)
+    if (el) {
+      if (el instanceof HTMLMetaElement) {
+        const match = el.getAttribute('content')?.match(/(\d+)/)
+        if (match) return match[1]
+      }
+      return el.getAttribute('data-pageid') || el.textContent?.trim() || null
+    }
+  }
+  return null
+}
+
+function collectPageData(): PageData {
+  return {
+    url: window.location.href,
+    pageTitle: document.title,
+    pageType: detectFacebookPage(),
+    pageId: extractPageId(),
+    pageName: extractPageName(),
+    followerCount: extractFollowerCount(),
+    category: extractCategory(),
+    posts: extractPosts(),
+    comments: extractComments(),
+    inboxCount: extractInboxCount(),
+    notifications: extractNotifications(),
+  }
 }
 
 // --- Synapse Button Injection ---
@@ -60,6 +227,7 @@ function injectSynapseButton() {
         right: 20px;
         z-index: 999999;
         cursor: pointer;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       }
       #synapse-social-button .synapse-btn {
         display: flex;
@@ -70,7 +238,6 @@ function injectSynapseButton() {
         border: none;
         border-radius: 20px;
         padding: 10px 18px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         font-size: 14px;
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(24, 119, 242, 0.4);
@@ -121,75 +288,35 @@ function setupMutationObserver() {
   const observer = new MutationObserver(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href
-      onUrlChange()
+      broadcastPageData()
     }
   })
   observer.observe(document, { subtree: true, childList: true })
 }
 
-function onUrlChange() {
-  const pageType = detectFacebookPage()
+function broadcastPageData() {
   chrome.runtime.sendMessage({
     type: 'PAGE_DATA_RESPONSE',
-    payload: {
-      url: window.location.href,
-      pageTitle: document.title,
-      pageType,
-      pageId: extractPageId(),
-    },
+    payload: collectPageData(),
   })
-}
-
-// --- Page ID Extraction ---
-
-function extractPageId(): string | null {
-  const meta = document.querySelector('meta[property="al:android:app_name"]')
-  if (meta) {
-    const fbMeta = document.querySelector('[data-pageid]')
-    if (fbMeta) return fbMeta.getAttribute('data-pageid')
-  }
-  return null
-}
-
-// --- Comment Extraction ---
-
-function extractComments(): CommentData[] {
-  const comments: CommentData[] = []
-  const commentElements = document.querySelectorAll('[data-commentid]')
-  commentElements.forEach((el) => {
-    const authorEl = el.querySelector('[data-hovercard]')
-    const contentEl = el.querySelector('[data-comment-body]')
-    comments.push({
-      id: el.getAttribute('data-commentid') || '',
-      author: authorEl?.textContent?.trim() || 'Unknown',
-      content: contentEl?.textContent?.trim() || '',
-      timestamp: '',
-    })
-  })
-  return comments
 }
 
 // --- Messaging ---
 
 function listenForMessages() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     switch (message.type) {
       case 'EXTRACT_PAGE_DATA':
-        sendResponse({
-          success: true,
-          data: {
-            url: window.location.href,
-            pageTitle: document.title,
-            pageType: detectFacebookPage(),
-            pageId: extractPageId(),
-            comments: extractComments(),
-          },
-        })
+        sendResponse({ success: true, data: collectPageData() })
         break
 
       case 'TOGGLE_SYNAPSE':
         isSynapseActive = !isSynapseActive
         sendResponse({ success: true, active: isSynapseActive })
+        break
+
+      case 'SYNAPSE_PING':
+        sendResponse({ success: true, active: true })
         break
     }
   })

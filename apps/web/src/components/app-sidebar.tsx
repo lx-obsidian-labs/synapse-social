@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, PenSquare, MessageSquare, BarChart3, Bot, Settings } from "lucide-react"
+import { Home, PenSquare, MessageSquare, BarChart3, Bot, Settings, PanelLeftClose, PanelLeft } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { useAppStore, type PageId } from "@/store"
 
@@ -24,15 +25,16 @@ const navItems: { id: PageId; label: string; icon: React.ReactNode }[] = [
 export function AppSidebar() {
   const currentPage = useAppStore((s) => s.currentPage)
   const setCurrentPage = useAppStore((s) => s.setCurrentPage)
+  const { open, setOpen } = useSidebar()
 
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
             S
           </div>
-          <span className="text-base font-semibold">Synapse Social</span>
+          {open && <span className="text-base font-semibold">Synapse Social</span>}
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -42,24 +44,45 @@ export function AppSidebar() {
               <SidebarMenuButton
                 isActive={currentPage === item.id}
                 onClick={() => setCurrentPage(item.id)}
+                title={!open ? item.label : undefined}
               >
-                {item.icon}
-                <span>{item.label}</span>
+                <span className="shrink-0">{item.icon}</span>
+                {open && <span>{item.label}</span>}
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-sm font-medium">
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium">
             N
           </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Nathan</span>
-            <span className="text-xs text-muted-foreground">Page Admin</span>
-          </div>
+          {open && (
+            <div className="flex flex-1 flex-col">
+              <span className="text-sm font-medium">Nathan</span>
+              <span className="text-xs text-muted-foreground">Page Admin</span>
+            </div>
+          )}
+          {open && (
+            <button
+              onClick={() => setOpen(false)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose size={16} />
+            </button>
+          )}
         </div>
+        {!open && (
+          <button
+            onClick={() => setOpen(true)}
+            className="mx-auto flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            title="Expand sidebar"
+          >
+            <PanelLeft size={16} />
+          </button>
+        )}
       </SidebarFooter>
     </Sidebar>
   )
