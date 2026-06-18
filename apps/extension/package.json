@@ -1,0 +1,14 @@
+{
+  "name": "synapse-extension",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "zip": "cd dist && bestzip ../synapse-extension.zip *"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.2",
+    "typescript": "^5.9.3"
+  }
+}

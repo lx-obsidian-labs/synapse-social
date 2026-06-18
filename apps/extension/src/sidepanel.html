@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synapse Social</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #F0F2F5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+    iframe { width: 100%; height: 100vh; border: none; display: none; }
+
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #65676B;
+      font-size: 14px;
+      gap: 12px;
+    }
+    #loading .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #E4E6EB;
+      border-top: 3px solid #1877F2;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      padding: 24px;
+      text-align: center;
+      color: #65676B;
+    }
+    #error h2 { font-size: 18px; margin-bottom: 8px; color: #050505; }
+    #error p { font-size: 13px; line-height: 1.5; }
+    #error button {
+      margin-top: 16px;
+      padding: 8px 20px;
+      background: #1877F2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Loading Synapse Social...</span>
+  </div>
+  <div id="error">
+    <h2>Unable to connect</h2>
+    <p>Make sure the Synapse Social web app is running (<strong>pnpm dev</strong>) then reload.</p>
+    <button onclick="location.reload()">Reload</button>
+  </div>
+  <iframe id="synapse-frame"></iframe>
+
+  <script>
+    const WEB_APP_URL = '__APP_URL__'
+    const iframe = document.getElementById('synapse-frame')
+    const loading = document.getElementById('loading')
+    const error = document.getElementById('error')
+    let loaded = false
+
+    function showApp() {
+      loading.style.display = 'none'
+      error.style.display = 'none'
+      iframe.style.display = 'block'
+    }
+
+    function showError() {
+      if (loaded) return
+      loading.style.display = 'none'
+      iframe.style.display = 'none'
+      error.style.display = 'flex'
+    }
+
+    iframe.addEventListener('load', () => {
+      loaded = true
+      showApp()
+    })
+
+    iframe.src = WEB_APP_URL
+
+    setTimeout(showError, 8000)
+  </script>
+</body>
+</html>
