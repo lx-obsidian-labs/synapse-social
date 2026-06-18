@@ -1,0 +1,24 @@
+{
+  "name": "synapse-social",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build && pnpm --filter extension build",
+    "lint": "pnpm --filter web lint && pnpm --filter extension lint",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter extension typecheck",
+    "test": "pnpm --filter web test",
+    "test:extension": "pnpm --filter extension test"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "18.2.0",
+      "react-dom": "18.2.0"
+    }
+  }
+}
