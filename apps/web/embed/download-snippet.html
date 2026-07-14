@@ -1,0 +1,46 @@
+<!--
+  Synapse AI — embeddable download button for lxobsidianportal.co.za
+
+  Drop this anywhere on your site. It always points at the NEWEST GitHub
+  release, so no site change is needed when a new extension version ships.
+  To release a new version: bump manifest.json, run scripts/release.ps1.
+-->
+<a id="synapse-download"
+   href="https://github.com/lx-obsidian-labs/synapse-social/releases/latest"
+   class="synapse-btn" target="_blank" rel="noopener noreferrer">
+  Download Synapse AI
+</a>
+
+<script>
+(async () => {
+  const REPO = "lx-obsidian-labs/synapse-social";
+  const btn = document.getElementById("synapse-download");
+  try {
+    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!r.ok) throw new Error("no release");
+    const data = await r.json();
+    const asset = data.assets && data.assets[0];
+    const version = (data.tag_name || "latest").replace(/^v/, "");
+    btn.href = asset ? asset.browser_download_url : data.html_url;
+    btn.textContent = `Download Synapse AI v${version}`;
+  } catch (e) {
+    btn.textContent = "Download Synapse AI"; // falls back to releases/latest
+  }
+})();
+</script>
+
+<style>
+  /* Example styling — replace with your site's theme */
+  .synapse-btn {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    background: #6d28d;            /* LX Obsidian brand accent */
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .synapse-btn:hover { background: #5b21b6; }
+</style>
