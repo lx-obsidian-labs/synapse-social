@@ -2276,11 +2276,31 @@ function listenForMessages() {
   })
 }
 
+// --- Public handshake (so websites can detect the extension) ---
+// Any page can postMessage({ type: 'SYNAPSE_PROBE' }) and we reply with the
+// installed version. This lets the public site show "Update" vs "Download".
+function listenForPublicProbe() {
+  window.addEventListener('message', (event: MessageEvent) => {
+    const data = event.data as any
+    if (!data || data.type !== 'SYNAPSE_PROBE') return
+    try {
+      const manifest = chrome.runtime.getManifest()
+      window.postMessage(
+        { type: 'SYNAPSE_PROBE_RESPONSE', version: manifest.version, id: chrome.runtime.id },
+        '*'
+      )
+    } catch {
+      /* ignore */
+    }
+  })
+}
+
 // --- Init ---
 
 function init() {
   injectFloatingButton()
   listenForMessages()
+  listenForPublicProbe()
 }
 
 if (document.readyState === 'loading') {

@@ -1,8 +1,14 @@
 <!--
   Synapse AI — embeddable download button for lxobsidianportal.co.za
 
-  Drop this anywhere on your site. It always points at the NEWEST GitHub
-  release, so no site change is needed when a new extension version ships.
+  Behaviour:
+    • No extension installed  -> "Download Synapse AI vX"
+    • Installed, outdated      -> "Update Synapse AI (vX)"
+    • Installed, up to date    -> "Synapse AI is up to date (vX)"
+
+  Detection uses a postMessage handshake with the extension (content script
+  replies with its installed version), then compares to the latest GitHub release.
+  Always points at the NEWEST build — no site change needed on new releases.
   To release a new version: bump manifest.json, run scripts/release.ps1.
 -->
 <a id="synapse-download"
@@ -12,21 +18,56 @@
 </a>
 
 <script>
-(async () => {
+(function () {
   const REPO = "lx-obsidian-labs/synapse-social";
   const btn = document.getElementById("synapse-download");
-  try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (!r.ok) throw new Error("no release");
-    const data = await r.json();
-    const asset = data.assets && data.assets[0];
-    const version = (data.tag_name || "latest").replace(/^v/, "");
-    btn.href = asset ? asset.browser_download_url : data.html_url;
-    btn.textContent = `Download Synapse AI v${version}`;
-  } catch (e) {
-    btn.textContent = "Download Synapse AI"; // falls back to releases/latest
+
+  function parseVersion(v) { return (v || "").replace(/^v/i, "").split(".").map(n => parseInt(n, 10) || 0); }
+  function cmp(a, b) {
+    const pa = parseVersion(a), pb = parseVersion(b), len = Math.max(pa.length, pb.length);
+    for (let i = 0; i < len; i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d; }
+    return 0;
+  }
+
+  // 1. Ask the extension for its installed version (if present).
+  let installed = null;
+  window.addEventListener("message", (e) => {
+    const d = e.data || {};
+    if (d.type === "SYNAPSE_PROBE_RESPONSE" && d.version) {
+      installed = d.version;
+      apply();
+    }
+  });
+  window.postMessage({ type: "SYNAPSE_PROBE" }, "*");
+
+  // 2. Fetch the latest release, then render the right label/href.
+  let latest = null;
+  fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+    headers: { Accept: "application/vnd.github+json" },
+  })
+    .then(r => (r.ok ? r.json() : Promise.reject()))
+    .then(data => {
+      const asset = data.assets && data.assets[0];
+      latest = {
+        version: (data.tag_name || "latest").replace(/^v/, ""),
+        url: asset ? asset.browser_download_url : (data.html_url || btn.href),
+      };
+      apply();
+    })
+    .catch(() => { /* keep fallback text/href */ });
+
+  function apply() {
+    if (!latest) return;
+    btn.href = latest.url;
+    if (installed) {
+      if (cmp(latest.version, installed) > 0) {
+        btn.textContent = `Update Synapse AI (v${latest.version})`;
+      } else {
+        btn.textContent = `Synapse AI is up to date (v${installed})`;
+      }
+    } else {
+      btn.textContent = `Download Synapse AI v${latest.version}`;
+    }
   }
 })();
 </script>
