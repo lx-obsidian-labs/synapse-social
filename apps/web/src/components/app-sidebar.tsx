@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, PenSquare, MessageSquare, BarChart3, Bot, Settings, PanelLeftClose, PanelLeft } from "lucide-react"
+import { Home, PenSquare, MessageSquare, BarChart3, Bot, Settings, PanelLeftClose, PanelLeft, ExternalLink } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -74,6 +74,17 @@ export function AppSidebar() {
             </button>
           )}
         </div>
+        {open && (
+          <a
+            href="https://www.lxobsidianportal.co.za"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <ExternalLink size={12} />
+            Visit LX Obsidian Portal
+          </a>
+        )}
         {!open && (
           <button
             onClick={() => setOpen(true)}

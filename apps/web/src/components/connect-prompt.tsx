@@ -44,6 +44,15 @@ export function ConnectPrompt() {
           <ExternalLink size={16} /> Open Facebook
         </Button>
       </div>
+      <a
+        href="https://www.lxobsidianportal.co.za"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-8 inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-primary hover:underline"
+      >
+        <ExternalLink size={12} />
+        Visit LX Obsidian Portal
+      </a>
     </div>
   )
 }

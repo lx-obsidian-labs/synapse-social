@@ -1,7 +1,6 @@
 "use client"
 
-import { useState } from "react"
-import { User, Globe, Shield, Palette, ChevronRight } from "lucide-react"
+import { User, Globe, Shield, Palette, ChevronRight, Bot, Sparkles, ExternalLink } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,11 +9,27 @@ import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { useAppStore } from "@/store"
+
+const AI_MODELS = [
+  "meta/llama-3.1-8b-instruct",
+  "meta/llama-3.3-70b-instruct",
+  "meta/llama-3.2-11b-vision-instruct",
+  "meta/llama-3.2-90b-vision-instruct",
+  "nvidia/nemotron-3-ultra-550b-a55b",
+]
 
 export function SettingsPage() {
-  const [notifications, setNotifications] = useState(true)
-  const [autoReply, setAutoReply] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
+  const notifications = useAppStore((s) => s.notifications)
+  const setNotifications = useAppStore((s) => s.setNotifications)
+  const autoReply = useAppStore((s) => s.autoReply)
+  const setAutoReply = useAppStore((s) => s.setAutoReply)
+  const theme = useAppStore((s) => s.theme)
+  const setTheme = useAppStore((s) => s.setTheme)
+  const aiModel = useAppStore((s) => s.aiModel)
+  const setAiModel = useAppStore((s) => s.setAiModel)
+  const apiKey = useAppStore((s) => s.apiKey)
+  const setApiKey = useAppStore((s) => s.setApiKey)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -151,7 +166,7 @@ export function SettingsPage() {
               <p className="text-sm font-medium">Dark Mode</p>
               <p className="text-xs text-muted-foreground">Switch between light and dark themes</p>
             </div>
-            <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+            <Switch checked={theme === "dark"} onCheckedChange={(v) => setTheme(v ? "dark" : "light")} />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -172,6 +187,59 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bot size={16} className="text-primary" />
+            AI Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ai-model">AI Model</Label>
+            <Select value={aiModel} onValueChange={setAiModel}>
+              <SelectTrigger id="ai-model" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AI_MODELS.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="api-key">API Key</Label>
+            <Input
+              id="api-key"
+              type="password"
+              placeholder="nvapi-..."
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              AI calls use the NVIDIA NIM API. Leave the key empty to use the server default.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-center gap-1.5 pt-2 text-xs text-muted-foreground">
+        <Sparkles size={12} className="text-primary" />
+        Built by
+        <a
+          href="https://www.lxobsidianportal.co.za"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+        >
+          LX Obsidian Portal
+          <ExternalLink size={12} />
+        </a>
+      </div>
     </div>
   )
 }

@@ -35,6 +35,10 @@
     --sidebar-primary: 214 89% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-border: 220 15% 91%;
+    --shadow-card: 0 1px 2px 0 hsl(220 20% 10% / 0.04), 0 4px 16px -4px hsl(220 20% 10% / 0.10);
+    --shadow-card-hover: 0 2px 4px 0 hsl(220 20% 10% / 0.05), 0 12px 28px -6px hsl(220 20% 10% / 0.16);
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
   }
 
   .dark {
@@ -68,6 +72,10 @@
     --sidebar-primary: 214 89% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 20%;
+    --shadow-card: 0 1px 2px 0 hsl(0 0% 0% / 0.30), 0 8px 24px -8px hsl(0 0% 0% / 0.45);
+    --shadow-card-hover: 0 2px 4px 0 hsl(0 0% 0% / 0.35), 0 18px 40px -10px hsl(0 0% 0% / 0.55);
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
   }
 }
 
@@ -77,5 +85,21 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(60rem 60rem at 110% -10%, hsl(214 89% 52% / 0.10), transparent 60%),
+      radial-gradient(50rem 50rem at -10% 110%, hsl(262 83% 58% / 0.08), transparent 55%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .rounded-lg.border.bg-card {
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+  .rounded-lg.border.bg-card:hover {
+    box-shadow: var(--shadow-card-hover);
   }
 }

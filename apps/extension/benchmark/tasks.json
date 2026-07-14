@@ -1,0 +1,90 @@
+{
+  "schema": "synapse-bench-v1",
+  "description": "BU-Bench-style task set adapted for Synapse (real-browser extension agent). Each task adds a 'start_url' so the harness can open a page where the content script is active before the agent starts.",
+  "tasks": [
+    {
+      "task_id": "custom-001",
+      "category": "Custom",
+      "confirmed_task": "Open Google and search for 'open source browser automation'. Then report the title of the first organic result.",
+      "answer": "A browser-automation project or documentation page (e.g. Playwright, Puppeteer, or browser-use).",
+      "start_url": "https://www.google.com"
+    },
+    {
+      "task_id": "custom-002",
+      "category": "Custom",
+      "confirmed_task": "Go to wikipedia.org and find the birth year of Ada Lovelace. Report just the year.",
+      "answer": "1815",
+      "start_url": "https://en.wikipedia.org"
+    },
+    {
+      "task_id": "custom-003",
+      "category": "Custom",
+      "confirmed_task": "Open YouTube and search for 'lofi hip hop'. Confirm search results loaded and report the first video title you see.",
+      "answer": "Any lofi hip hop video title from the results page.",
+      "start_url": "https://www.youtube.com"
+    },
+    {
+      "task_id": "webbench-001",
+      "category": "WebBench",
+      "confirmed_task": "On GitHub, search for the repository 'facebook/react' and report how many stars it has (open the repo page).",
+      "answer": "A star count in the hundreds of thousands (e.g. ~220k+).",
+      "start_url": "https://github.com"
+    },
+    {
+      "task_id": "webbench-002",
+      "category": "WebBench",
+      "confirmed_task": "Open DuckDuckGo and search for 'weather in Tokyo'. Report today's temperature if shown.",
+      "answer": "A temperature value in °C or °F for Tokyo.",
+      "start_url": "https://duckduckgo.com"
+    },
+    {
+      "task_id": "mind2web-001",
+      "category": "Mind2Web",
+      "confirmed_task": "Go to Amazon and search for 'wireless mouse'. Open the first product result and report its product title.",
+      "answer": "The title of the first wireless mouse product listing.",
+      "start_url": "https://www.amazon.com"
+    },
+    {
+      "task_id": "mind2web-002",
+      "category": "Mind2Web",
+      "confirmed_task": "Open Reddit and search for 'selfhosted'. Report the name of the first community (subreddit) in the results.",
+      "answer": "A subreddit name such as r/selfhosted.",
+      "start_url": "https://www.reddit.com"
+    },
+    {
+      "task_id": "gaia-001",
+      "category": "GAIA",
+      "confirmed_task": "Search the web for the current CEO of NVIDIA and report their name.",
+      "answer": "Jensen Huang",
+      "start_url": "https://www.google.com"
+    },
+    {
+      "task_id": "gaia-002",
+      "category": "GAIA",
+      "confirmed_task": "Find out what year the first crewed Moon landing happened, using a web search, and report the year.",
+      "answer": "1969",
+      "start_url": "https://www.bing.com"
+    },
+    {
+      "task_id": "browsecomp-001",
+      "category": "BrowseComp",
+      "confirmed_task": "Use the web to determine the capital of Australia and report it.",
+      "answer": "Canberra",
+      "start_url": "https://www.google.com"
+    },
+    {
+      "task_id": "browsecomp-002",
+      "category": "BrowseComp",
+      "confirmed_task": "Search the web and report the number of planets in our solar system.",
+      "answer": "8",
+      "start_url": "https://www.wikipedia.org"
+    },
+    {
+      "task_id": "custom-004",
+      "category": "Custom",
+      "confirmed_task": "Open example.com and summarize the page in one sentence.",
+      "answer": "A sentence describing example.com as a sample web page.",
+      "start_url": "https://example.com"
+    }
+  ]
+}

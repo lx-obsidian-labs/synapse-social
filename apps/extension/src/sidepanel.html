@@ -3,248 +3,1139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synapse Social</title>
+  <title>Synapse AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="description" content="AI-powered browser automation assistant" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
+      /* Developer-centric dark palette (default) */
+      --primary: #2DD4BF;              /* high-contrast teal/cyan accent */
+      --primary-glow: rgba(45,212,191,0.35);
+      --primary-dark: #14B8A6;
+      --primary-light: rgba(45,212,191,0.12);
+      --success: #34D399;
+      --warning: #FBBF24;
+      --error: #F87171;
+
+      --bg: #0B0E14;
+      --bg-gradient: linear-gradient(160deg, #0B0E14 0%, #0D1117 55%, #0A0D13 100%);
+      --surface: #11161F;             /* panels / cards */
+      --surface-2: #161B22;
+      --surface-3: #1C232D;
+      --border: #1F2630;
+      --border-strong: #2A323D;
+      --glass-bg: rgba(17,22,31,0.82);
+      --glass-border: rgba(255,255,255,0.06);
+      --glass-shadow: 0 10px 40px rgba(0,0,0,0.55);
+
+      --text: #E6EDF3;
+      --text-secondary: #9AA7B4;
+      --text-tertiary: #6B7785;
+
+      --header-bg: #0D1117;
+      --msg-user-bg: linear-gradient(135deg, #2DD4BF, #0EA5A4);
+      --msg-assistant-bg: #11161F;
+      --input-bg: #0D1117;
+      --badge-bg: rgba(45,212,191,0.12);
+
+      --radius: 10px;
+      --radius-sm: 6px;
+      --radius-lg: 14px;
+
+      --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    }
+    body.light {
       --primary: #1877F2;
-      --primary-hover: #166FE5;
+      --primary-glow: rgba(24,119,242,0.3);
+      --primary-dark: #0D5AB5;
+      --primary-light: #E7F3FF;
       --success: #42B72A;
       --warning: #F7B928;
       --error: #FA3E3E;
-      --bg: #F0F2F5;
-      --card: #FFFFFF;
-      --border: #E4E6EB;
-      --text: #050505;
-      --text-secondary: #65676B;
-      --radius: 8px;
+      --bg-gradient: linear-gradient(160deg, #f0f4ff 0%, #e8edf5 40%, #f5f0ff 100%);
+      --surface: rgba(255,255,255,0.92);
+      --surface-2: #ffffff;
+      --surface-3: #f3f5f9;
+      --border: rgba(0,0,0,0.09);
+      --border-strong: rgba(0,0,0,0.14);
+      --glass-bg: rgba(255,255,255,0.72);
+      --glass-border: rgba(255,255,255,0.25);
+      --glass-shadow: 0 8px 32px rgba(0,0,0,0.08);
+      --text: #0A0A0F;
+      --text-secondary: rgba(10,10,15,0.55);
+      --text-tertiary: rgba(10,10,15,0.35);
+      --header-bg: #ffffff;
+      --msg-user-bg: linear-gradient(135deg, #1877F2, #1A6FE5);
+      --msg-assistant-bg: rgba(255,255,255,0.92);
+      --input-bg: rgba(0,0,0,0.03);
+      --badge-bg: rgba(24,119,242,0.08);
     }
+
+    /* ===== Dev-theme enhancements: monospace + dashboard polish ===== */
+    .value, .count, .hud-readout, .hud-action, .hud-steps, .hud-state,
+    .badge, .tag, .pill, .score-breakdown, .memory-meta, .health-score,
+    code, pre, .code, .msg-bubble code, .msg-bubble pre {
+      font-family: var(--mono);
+    }
+    code, pre, .code, .msg-bubble pre {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .generated-output, .tool-result {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .agent-hud, .onboarding-card, .memory-list, .tool-grid, .profile-bar,
+    .page-bar, .chat-header, .generate-header, .memory-header, .tools-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .tool-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+    }
+    .tool-btn:hover {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary-glow);
+      transform: translateY(-1px);
+    }
+    .tool-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+    a, .accent, .hud-learn, .link { color: var(--primary); }
+    ::selection { background: var(--primary); color: #04110f; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
+      font-family: var(--font);
+      background: var(--bg-gradient);
       color: var(--text);
       height: 100vh;
       display: flex;
       flex-direction: column;
-      font-size: 14px;
+      font-size: 13px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
     }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #BCC0C4; border-radius: 3px; }
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 20% 10%, rgba(24,119,242,0.06) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 90%, rgba(66,183,42,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 0.3s;
+    }
+    body.dark::before { opacity: 0.3; }
+    body.dark .page-bar .pill.page { background: rgba(74,141,247,0.2); }
+    body.dark .page-bar .pill.post { background: rgba(76,175,80,0.2); }
 
-    /* Header */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+    /* Theme toggle */
+    .theme-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1px solid var(--border); background: var(--surface);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: all 0.2s; flex-shrink: 0;
+    }
+    .theme-btn:hover { border-color: var(--primary); background: var(--primary-light); }
+    body.dark .theme-btn:hover { background: rgba(74,141,247,0.15); }
+
+    /* Tools search bar */
+    .tools-search {
+      padding: 8px 18px; border-bottom: 1px solid var(--border);
+      background: var(--surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .tools-search input {
+      width: 100%; padding: 8px 12px 8px 32px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--input-bg); font-size: 11.5px; font-family: inherit;
+      outline: none; color: var(--text); transition: border-color 0.2s;
+    }
+    .tools-search input:focus { border-color: var(--primary); }
+    .tools-search input::placeholder { color: var(--text-tertiary); }
+    .tools-search-wrap { position: relative; }
+    .tools-search-wrap .search-icon {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 12px; opacity: 0.4; pointer-events: none;
+    }
+
+    /*Glass Header */
     .header {
+      position: relative;
+      z-index: 2;
       display: flex; align-items: center; gap: 10px;
-      padding: 12px 16px;
-      background: var(--card);
+      padding: 14px 18px;
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
+      transition: background 0.3s;
     }
     .logo {
-      width: 32px; height: 32px;
-      background: var(--primary); border-radius: var(--radius);
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: var(--radius-sm);
       display: flex; align-items: center; justify-content: center;
-      color: white; font-weight: 700; font-size: 14px;
+      color: white; font-weight: 800; font-size: 15px;
+      box-shadow: 0 2px 8px var(--primary-glow);
     }
-    .header h1 { font-size: 16px; font-weight: 600; flex: 1; }
-    .header .status {
-      display: flex; align-items: center; gap: 4px;
-      font-size: 11px; color: var(--text-secondary);
+    .header-info { flex: 1; min-width: 0; }
+    .header-info h1 { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+    .header-info .sub { font-size: 10px; color: var(--text-secondary); font-weight: 500; }
+    .header-status {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      background: rgba(66,183,42,0.1);
+      border: 1px solid rgba(66,183,42,0.2);
+      border-radius: 20px;
+      font-size: 10px; font-weight: 600; color: var(--success);
     }
-    .header .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .header-status .dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px rgba(66,183,42,0.4);
+    }
 
-    /* Tabs */
+    /* Glass Page Bar */
+    .page-bar {
+      position: relative;
+      z-index: 2;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 18px;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      min-height: 36px;
+    }
+    .page-bar .label { color: var(--text-tertiary); font-weight: 500; }
+    .page-bar .value { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .page-bar .pill {
+      padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;
+    }
+    .page-bar .pill.page { background: var(--primary-light); color: var(--primary); }
+    .page-bar .pill.post { background: rgba(66,183,42,0.1); color: var(--success); }
+    .page-bar .pill.group { background: rgba(247,185,40,0.1); color: #B87A00; }
+    .page-bar .pill.inbox { background: rgba(24,119,242,0.08); color: var(--primary); }
+    .page-bar .pill.insights { background: rgba(66,183,42,0.08); color: var(--success); }
+    .page-bar .pill.unknown { background: rgba(0,0,0,0.04); color: var(--text-secondary); }
+
+    /* Glass Tabs */
     .tabs {
-      display: flex; background: var(--card);
-      border-bottom: 1px solid var(--border); padding: 0 12px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 12px;
+      gap: 2px;
     }
     .tab {
-      padding: 10px 16px; font-size: 13px; font-weight: 500;
-      color: var(--text-secondary); cursor: pointer;
-      border-bottom: 2px solid transparent; transition: all 0.15s;
-      background: none; border-top: none; border-left: none; border-right: none;
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      position: relative;
+      background: none;
+      border: none;
       font-family: inherit;
+      transition: color 0.2s;
+      text-align: center;
     }
-    .tab:hover { color: var(--text); background: #F0F2F5; }
-    .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%; transform: translateX(-50%) scaleX(0);
+      width: 24px; height: 2.5px;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--primary); }
+    .tab.active::after { transform: translateX(-50%) scaleX(1); }
+    .tab .tab-icon { display: block; font-size: 16px; margin-bottom: 2px; }
 
-    /* Content */
-    .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 1; }
     .tab-content { display: none; flex: 1; flex-direction: column; overflow: hidden; }
     .tab-content.active { display: flex; }
 
     /* AI Chat */
     .chat-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 16px; border-bottom: 1px solid var(--border);
-      background: linear-gradient(135deg, rgba(24,119,242,0.08), rgba(24,119,242,0.03));
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 18px;
+      background: linear-gradient(135deg, rgba(24,119,242,0.06), rgba(24,119,242,0.02));
+      border-bottom: 1px solid var(--border);
     }
-    .chat-header .icon {
-      width: 28px; height: 28px;
+    .chat-header .avatar {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--primary), #4A8DF7);
+      border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      background: var(--primary); border-radius: 6px; color: white; font-size: 14px;
+      color: white; font-weight: 700; font-size: 14px;
+      box-shadow: 0 2px 8px rgba(24,119,242,0.2);
     }
     .chat-header .name { font-size: 13px; font-weight: 600; }
     .chat-header .sub { font-size: 10px; color: var(--text-secondary); }
 
-    .messages { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
-    .msg { display: flex; gap: 8px; max-width: 85%; }
+    .messages {
+      flex: 1; overflow-y: auto; padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .msg { display: flex; gap: 8px; max-width: 88%; animation: msgIn 0.25s ease-out; }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .msg.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg.assistant { align-self: flex-start; }
     .msg-avatar {
       width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; flex-shrink: 0;
+      font-size: 12px; font-weight: 600; flex-shrink: 0;
     }
-    .msg.user .msg-avatar { background: var(--primary); color: white; }
-    .msg.assistant .msg-avatar { background: #E7F3FF; color: var(--primary); }
+    .msg.user .msg-avatar { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+    .msg.assistant .msg-avatar { background: linear-gradient(135deg, #E8F0FE, #D0E4FF); color: var(--primary); }
     .msg-bubble {
-      padding: 8px 14px; border-radius: 16px;
-      font-size: 13px; line-height: 1.5; white-space: pre-wrap;
+      padding: 10px 16px; border-radius: var(--radius-lg);
+      font-size: 12.5px; line-height: 1.55; white-space: pre-wrap;
     }
     .msg.user .msg-bubble {
-      background: var(--primary); color: white;
+      background: var(--msg-user-bg);
+      color: white;
       border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(24,119,242,0.15);
     }
     .msg.assistant .msg-bubble {
-      background: var(--card); color: var(--text);
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       border: 1px solid var(--border);
       border-bottom-left-radius: 4px;
+      box-shadow: var(--glass-shadow);
     }
-    .msg-time { font-size: 10px; color: var(--text-secondary); margin-top: 2px; text-align: right; }
+    .msg-time { font-size: 9px; color: var(--text-tertiary); margin-top: 3px; text-align: right; padding: 0 4px; }
 
     .chat-input-area {
-      padding: 10px 16px; border-top: 1px solid var(--border);
-      background: var(--card); display: flex; gap: 8px;
+      padding: 10px 18px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; gap: 8px;
     }
-    .chat-input-area input {
-      flex: 1; padding: 8px 14px; border: 1px solid var(--border);
-      border-radius: 20px; font-size: 13px; font-family: inherit;
-      outline: none;
+    .chat-input-area .input-wrap {
+      flex: 1;
+      display: flex; align-items: center;
+      background: rgba(0,0,0,0.03);
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      padding: 0 4px 0 16px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .chat-input-area input:focus { border-color: var(--primary); }
-    .chat-input-area button {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: var(--primary); color: white; border: none;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s; flex-shrink: 0;
+    .chat-input-area .input-wrap:focus-within {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(24,119,242,0.1);
     }
-    .chat-input-area button:hover { background: var(--primary-hover); }
-    .chat-input-area button:disabled { background: #BCC0C4; cursor: default; }
+    .chat-input-area .input-wrap input {
+      flex: 1; padding: 9px 0; border: none;
+      background: transparent; font-size: 13px; font-family: inherit;
+      outline: none; color: var(--text);
+    }
+    .chat-input-area .input-wrap input::placeholder { color: var(--text-tertiary); }
+    .chat-input-area .input-wrap button {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(24,119,242,0.2);
+    }
+    .chat-input-area .input-wrap button:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(24,119,242,0.3); }
+    .chat-input-area .input-wrap button:active { transform: scale(0.95); }
+    .chat-input-area .input-wrap button:disabled { background: rgba(0,0,0,0.1); box-shadow: none; cursor: default; }
+    .chat-input-area .input-wrap .enhance-btn {
+      width: auto; min-width: 34px; height: 34px; padding: 0 12px; border-radius: 18px;
+      background: var(--surface-2, rgba(255,255,255,0.06)); color: var(--primary);
+      border: 1px solid var(--primary); cursor: pointer; font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: all 0.2s; font-family: inherit;
+    }
+    .chat-input-area .input-wrap .enhance-btn:hover { background: var(--primary-light, rgba(45,212,191,0.15)); }
+    .chat-input-area .input-wrap .enhance-btn:disabled { opacity: 0.5; cursor: default; border-color: var(--border); color: var(--text-tertiary); }
 
     .suggestions {
       display: flex; flex-wrap: wrap; gap: 6px;
-      padding: 8px 16px; background: var(--card);
+      padding: 8px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
     }
     .suggestion-chip {
-      padding: 4px 10px; border-radius: 14px;
-      border: 1px solid var(--border); background: none;
-      font-size: 11px; color: var(--text-secondary); cursor: pointer;
-      font-family: inherit; transition: all 0.15s;
+      padding: 5px 12px; border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.5);
+      font-size: 11px; font-weight: 500;
+      color: var(--text-secondary); cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
     }
-    .suggestion-chip:hover { background: #F0F2F5; border-color: var(--primary); color: var(--primary); }
+    .suggestion-chip:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(24,119,242,0.1);
+    }
 
     .typing-indicator {
       display: flex; gap: 4px; align-items: center;
-      padding: 12px 16px;
+      padding: 8px 16px; align-self: flex-start;
+      background: var(--surface); border-radius: var(--radius-lg);
+      border: 1px solid var(--border); padding: 10px 18px;
     }
     .typing-indicator span {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #BCC0C4; animation: bounce 1.2s infinite;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-tertiary);
+      animation: typingBounce 1.3s ease-in-out infinite;
     }
-    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
+    .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typingBounce {
       0%, 60%, 100% { transform: translateY(0); }
-      30% { transform: translateY(-6px); }
+      30% { transform: translateY(-8px); background: var(--primary); }
     }
 
     /* Generate tab */
-    .generate-content { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
-    .generate-content textarea {
-      flex: 1; min-height: 120px; padding: 12px;
-      border: 1px solid var(--border); border-radius: var(--radius);
+    .generate-wrap {
+      padding: 16px 18px; flex: 1; display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto;
+    }
+    .generate-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, rgba(24,119,242,0.06), rgba(24,119,242,0.02));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 2px;
+    }
+    .generate-header .icon { font-size: 18px; }
+    .generate-header .text { font-size: 12px; font-weight: 600; color: var(--text); }
+    .generate-header .sub { font-size: 10px; color: var(--text-secondary); }
+
+    .generate-wrap .config-row {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .generate-wrap .config-group {
+      display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 80px;
+    }
+    .generate-wrap .config-group label {
+      font-size: 9.5px; font-weight: 600; color: var(--text-tertiary);
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .generate-wrap .config-group .options {
+      display: flex; gap: 3px;
+    }
+    .generate-wrap .config-group .opt-btn {
+      flex: 1; padding: 5px 8px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surface);
+      font-size: 10px; font-weight: 500; cursor: pointer; font-family: inherit;
+      color: var(--text-secondary); transition: all 0.15s; text-align: center;
+    }
+    .generate-wrap .config-group .opt-btn:hover {
+      border-color: var(--primary); color: var(--primary);
+    }
+    .generate-wrap .config-group .opt-btn.active {
+      background: var(--primary); border-color: var(--primary);
+      color: white; box-shadow: 0 1px 4px rgba(24,119,242,0.25);
+    }
+
+    .generate-wrap textarea {
+      flex: 1; min-height: 80px; padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
       font-size: 13px; font-family: inherit; resize: none; outline: none;
+      background: var(--surface);
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .generate-content textarea:focus { border-color: var(--primary); }
-    .generate-content .btn-row { display: flex; gap: 8px; }
-    .generate-content .btn {
-      padding: 8px 20px; border-radius: var(--radius);
-      font-size: 13px; font-weight: 600; border: none; cursor: pointer;
-      font-family: inherit; transition: all 0.15s;
+    .generate-wrap textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(24,119,242,0.08); }
+    .generate-wrap textarea::placeholder { color: var(--text-tertiary); }
+    .generate-wrap .btn-row { display: flex; gap: 6px; }
+    .generate-wrap .btn {
+      padding: 8px 18px; border-radius: var(--radius-sm);
+      font-size: 11.5px; font-weight: 600; border: none; cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
     }
-    .generate-content .btn-primary { background: var(--primary); color: white; }
-    .generate-content .btn-primary:hover { background: var(--primary-hover); }
-    .generate-content .btn-primary:disabled { background: #BCC0C4; cursor: default; }
-    .generate-content .btn-secondary { background: var(--border); color: var(--text); }
-    .generate-content .btn-secondary:hover { background: #D8DADE; }
-    .generate-content .templates {
+    .generate-wrap .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; box-shadow: 0 2px 8px rgba(24,119,242,0.2);
+    }
+    .generate-wrap .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(24,119,242,0.3); }
+    .generate-wrap .btn-primary:disabled { background: rgba(0,0,0,0.08); box-shadow: none; color: var(--text-tertiary); cursor: default; transform: none; }
+    .generate-wrap .btn-secondary {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .generate-wrap .btn-secondary:hover { background: rgba(0,0,0,0.03); }
+    .generate-wrap .btn-facebook {
+      background: #1877F2; color: white; border: none;
+      box-shadow: 0 2px 8px rgba(24,119,242,0.25);
+    }
+    .generate-wrap .btn-facebook:hover { background: #166FE5; transform: translateY(-1px); }
+    .generate-wrap .btn-facebook:disabled { background: rgba(0,0,0,0.08); box-shadow: none; color: var(--text-tertiary); cursor: default; transform: none; }
+    .generate-wrap .templates {
       display: flex; flex-wrap: wrap; gap: 4px;
     }
-    .generate-content .templates button {
+    .generate-wrap .templates button {
       padding: 4px 10px; border-radius: 14px;
-      border: 1px solid var(--border); background: none;
-      font-size: 11px; cursor: pointer; font-family: inherit;
-      transition: all 0.15s;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.5);
+      font-size: 10px; font-weight: 500; cursor: pointer; font-family: inherit;
+      transition: all 0.2s; color: var(--text-secondary);
     }
-    .generate-content .templates button:hover {
-      background: #E7F3FF; border-color: var(--primary); color: var(--primary);
+    .generate-wrap .templates button:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
     }
     .generate-result {
       padding: 14px; border-radius: var(--radius);
-      background: #F7F8FA; border: 1px solid var(--border);
-      font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      font-size: 12px; line-height: 1.6; white-space: pre-wrap;
       display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      box-shadow: var(--glass-shadow);
     }
-    .generate-result.visible { display: block; }
+    .generate-result.visible { display: block; animation: msgIn 0.25s ease-out; }
+    .count { font-size: 10px; color: var(--text-tertiary); text-align: right; padding: 0 4px; }
+    .gen-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .generated-output.visible { display: block; animation: msgIn 0.25s ease-out; }
 
-    .count { font-size: 11px; color: var(--text-secondary); text-align: right; padding: 0 2px; }
+    /* Floating copy button on every Content Creator result */
+    .generated-output { position: relative; }
+    .copy-float {
+      position: absolute; top: 6px; right: 6px;
+      width: 26px; height: 26px; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; line-height: 1; cursor: pointer;
+      border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface-2, rgba(255,255,255,0.06)); color: var(--text-secondary);
+      opacity: 0; transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .generated-output:hover .copy-float { opacity: 1; }
+    .copy-float:hover { background: var(--primary-light, rgba(45,212,191,0.15)); color: var(--primary); border-color: var(--primary); }
+    .copy-float.copied { color: var(--success); border-color: var(--success); }
 
+    /* Tools tab — Glass Tool Panel */
+    .tools-content {
+      padding: 0;
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .tools-scroll {
+      padding: 12px 18px 24px;
+      overflow-y: auto; flex: 1;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .tool-section {}
+    .tool-section-title {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 700;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 6px 0 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .tool-section-title .badge {
+      font-size: 8px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px;
+      background: rgba(24,119,242,0.08);
+      color: var(--primary);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .tool-grid {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
     .tool-btn {
-      padding: 6px 12px; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--card);
-      font-size: 12px; font-weight: 500; cursor: pointer;
-      font-family: inherit; transition: all 0.15s;
+      padding: 7px 14px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      font-size: 11.5px; font-weight: 500; cursor: pointer;
+      font-family: inherit; transition: all 0.2s;
+      color: var(--text);
+      display: inline-flex; align-items: center; gap: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-    .tool-btn:hover { background: #E7F3FF; border-color: var(--primary); color: var(--primary); }
+    .tool-btn:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 2px 8px rgba(24,119,242,0.1);
+      transform: translateY(-1px);
+    }
     .tool-btn:active { transform: scale(0.97); }
+    .tool-btn:disabled {
+      opacity: 0.4; cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
 
-    /* Page data bar */
-    .page-data {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 16px; background: var(--card);
-      border-bottom: 1px solid var(--border); font-size: 12px;
+    /* Tool input rows */
+    .tool-input-row {
+      display: flex; gap: 6px; align-items: center;
     }
-    .page-data .label { color: var(--text-secondary); }
-    .page-data .value { font-weight: 500; }
-    .page-data .pill {
-      padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;
+    .tool-input-row input {
+      flex: 1; padding: 7px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 11.5px; font-family: inherit;
+      outline: none; background: var(--surface);
+      transition: border-color 0.2s;
     }
-    .page-data .pill.page { background: #E7F3FF; color: var(--primary); }
-    .page-data .pill.post { background: #E8F5E9; color: var(--success); }
+    .tool-input-row input:focus { border-color: var(--primary); }
+    .tool-input-row input::placeholder { color: var(--text-tertiary); }
+    .tool-input-row .tool-btn { flex-shrink: 0; }
+
+    .tool-hint {
+      font-size: 9.5px; color: var(--text-tertiary);
+      line-height: 1.5; padding: 2px 4px;
+    }
+
+    /* Tool result glass card */
+    .tool-result {
+      display: none;
+      margin-top: 4px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      font-size: 11.5px; line-height: 1.5;
+      white-space: pre-wrap;
+      max-height: 160px;
+      overflow-y: auto;
+      box-shadow: var(--glass-shadow);
+      animation: msgIn 0.2s ease-out;
+    }
+    .tool-result.visible { display: block; }
+
+    /* Offline banner */
+    .offline-banner {
+      display: none;
+      padding: 14px 18px;
+      text-align: center;
+      font-size: 12px;
+      color: #92400E;
+      background: linear-gradient(135deg, rgba(247,185,40,0.12), rgba(247,185,40,0.06));
+      border-bottom: 1px solid rgba(247,185,40,0.2);
+    }
+    .offline-banner .icon { font-size: 24px; display: block; margin-bottom: 6px; }
+    .offline-banner .title { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+    .offline-banner .sub { font-size: 11px; opacity: 0.8; }
+    /* Onboarding */
+    .onboarding-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      animation: fadeIn 0.3s ease-out;
+    }
+    .onboarding-overlay.hidden { display: none; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .onboarding-card {
+      background: var(--surface); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      width: 100%; max-width: 340px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.2); animation: slideUp 0.3s ease-out;
+      padding: 24px 20px;
+    }
+    .onboarding-card .logo-area { text-align: center; margin-bottom: 16px; }
+    .onboarding-card .logo-area .icon { font-size: 36px; }
+    .onboarding-card .logo-area h2 { font-size: 16px; font-weight: 700; margin-top: 6px; }
+    .onboarding-card .logo-area p { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+    .onboarding-steps { display: flex; justify-content: center; gap: 6px; margin-bottom: 18px; }
+    .onboarding-steps .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); transition: all 0.3s;
+    }
+    .onboarding-steps .dot.active { background: var(--primary); width: 24px; border-radius: 4px; }
+    .onboarding-steps .dot.done { background: var(--success); }
+    .onboarding-step { display: none; flex-direction: column; gap: 12px; }
+    .onboarding-step.active { display: flex; animation: slideUp 0.25s ease-out; }
+    .onboarding-step label { font-size: 12px; font-weight: 600; color: var(--text); }
+    .onboarding-step .hint { font-size: 10px; color: var(--text-secondary); line-height: 1.5; margin-top: -4px; }
+    .onboarding-step input, .onboarding-step textarea, .onboarding-step select {
+      width: 100%; padding: 9px 12px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border); background: var(--input-bg);
+      font-size: 12px; font-family: inherit; outline: none; color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .onboarding-step input:focus, .onboarding-step textarea:focus, .onboarding-step select:focus {
+      border-color: var(--primary);
+    }
+    .onboarding-step textarea { min-height: 60px; resize: vertical; }
+    .onboarding-step .opt-group {
+      display: flex; flex-wrap: wrap; gap: 4px;
+    }
+    .onboarding-step .opt-group .opt-btn {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); font-size: 11px; font-weight: 500; cursor: pointer;
+      font-family: inherit; color: var(--text-secondary); transition: all 0.15s;
+    }
+    .onboarding-step .opt-group .opt-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .onboarding-step .opt-group .opt-btn.selected { background: var(--primary); border-color: var(--primary); color: white; }
+    .onboarding-step .opt-group .opt-btn .emoji { margin-right: 3px; }
+    .onboarding-nav {
+      display: flex; justify-content: space-between; gap: 8px; margin-top: 16px;
+      padding-top: 14px; border-top: 1px solid var(--border);
+    }
+    .onboarding-nav .btn {
+      padding: 8px 18px; border-radius: var(--radius-sm); font-size: 11.5px;
+      font-weight: 600; border: none; cursor: pointer; font-family: inherit; transition: all 0.2s;
+    }
+    .onboarding-nav .btn-back {
+      background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+    }
+    .onboarding-nav .btn-back:hover { background: rgba(0,0,0,0.03); }
+    .onboarding-nav .btn-next {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; box-shadow: 0 2px 8px rgba(24,119,242,0.2);
+    }
+    .onboarding-nav .btn-next:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(24,119,242,0.3); }
+    .onboarding-nav .btn-next:disabled, .onboarding-nav .btn-finish:disabled { opacity: 0.4; cursor: default; transform: none; }
+    .onboarding-nav .btn-finish {
+      background: linear-gradient(135deg, var(--success), #2d8f1a);
+      color: white; box-shadow: 0 2px 8px rgba(66,183,42,0.25);
+    }
+    .onboarding-nav .btn-finish:hover { transform: translateY(-1px); }
+    .onboarding-nav .btn-skip {
+      background: transparent; border: none; color: var(--text-tertiary); font-size: 11px;
+    }
+    .onboarding-nav .btn-skip:hover { color: var(--text-secondary); }
+    .onboarding-summary {
+      background: var(--input-bg); padding: 12px; border-radius: var(--radius-sm);
+      font-size: 11px; line-height: 1.6; color: var(--text-secondary);
+    }
+    .onboarding-summary strong { color: var(--text); }
+    .profile-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 18px; background: var(--surface);
+      border-bottom: 1px solid var(--border); font-size: 10px;
+    }
+    .profile-bar .avatar {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; flex-shrink: 0;
+    }
+    .profile-bar .name { font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .profile-bar .tag {
+      padding: 1px 6px; border-radius: 6px; font-size: 8px; font-weight: 600;
+      background: rgba(24,119,242,0.08); color: var(--primary); text-transform: uppercase;
+    }
+    .profile-bar .edit-btn {
+      margin-left: auto; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; font-size: 9px; font-weight: 500; cursor: pointer; color: var(--text-secondary); font-family: inherit;
+    }
+    .profile-bar .edit-btn:hover { background: rgba(0,0,0,0.03); }
+
+    /* Remix Bar */
+    .remix-bar {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+    }
+    .remix-bar .remix-btn {
+      padding: 4px 10px; border-radius: 14px; border: 1px solid var(--border);
+      background: rgba(255,255,255,0.5); font-size: 10px; font-weight: 500;
+      cursor: pointer; font-family: inherit; color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .remix-bar .remix-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .remix-bar .remix-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* Health Score */
+    .health-score {
+      margin-top: 8px; padding: 12px; border-radius: var(--radius);
+      background: var(--surface); border: 1px solid var(--border);
+      display: none; flex-direction: column; gap: 6px;
+    }
+    .health-score.visible { display: flex; animation: msgIn 0.25s ease-out; }
+    .health-score .score-header { display: flex; align-items: center; justify-content: space-between; }
+    .health-score .score-header .label { font-size: 11px; font-weight: 600; color: var(--text); }
+    .health-score .score-header .value { font-size: 18px; font-weight: 800; }
+    .health-score .score-header .value.good { color: var(--success); }
+    .health-score .score-header .value.ok { color: var(--warning); }
+    .health-score .score-header .value.bad { color: var(--error); }
+    .health-score .score-breakdown { display: flex; flex-direction: column; gap: 3px; }
+    .health-score .score-row { display: flex; align-items: center; gap: 6px; font-size: 10px; }
+    .health-score .score-row .bar-bg { flex: 1; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .health-score .score-row .bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease-out; }
+    .health-score .score-row .bar-fill.good { background: var(--success); }
+    .health-score .score-row .bar-fill.ok { background: var(--warning); }
+    .health-score .score-row .bar-fill.bad { background: var(--error); }
+    .health-score .score-row .bar-label { min-width: 70px; color: var(--text-secondary); }
+    .health-score .score-row .bar-pct { min-width: 28px; text-align: right; font-weight: 600; }
+
+    /* Series Planner */
+    .series-card {
+      padding: 10px 12px; border-radius: var(--radius-sm);
+      background: var(--input-bg); border: 1px solid var(--border);
+      margin-bottom: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .series-card:hover { border-color: var(--primary); }
+    .series-card .title { font-size: 11px; font-weight: 600; color: var(--text); }
+    .series-card .sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+    .series-card .days { font-size: 9px; color: var(--text-tertiary); margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap; }
+    .series-card .days .day {
+      padding: 1px 6px; border-radius: 6px; background: rgba(24,119,242,0.08);
+      color: var(--primary); font-weight: 500;
+    }
+
+    /* Hook list */
+    .hook-item {
+      padding: 6px 10px; border-radius: var(--radius-sm);
+      border-left: 3px solid var(--primary); background: var(--surface);
+      font-size: 11px; line-height: 1.4; margin-bottom: 4px; color: var(--text);
+    }
+    .hook-item .num { font-weight: 700; color: var(--primary); margin-right: 4px; }
+  /* ===== Robotic Agent HUD ===== */
+  .agent-hud {
+    position: relative;
+    margin: 10px 14px 4px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, rgba(15,18,40,0.94), rgba(24,28,60,0.94));
+    border: 1px solid rgba(74,141,247,0.35);
+    box-shadow: 0 0 0 1px rgba(74,141,247,0.15), 0 8px 30px rgba(10,12,40,0.45), inset 0 0 22px rgba(74,141,247,0.08);
+    overflow: hidden;
+    color: #cfe0ff;
+    animation: hudIn 0.35s cubic-bezier(0.22,1,0.36,1);
+  }
+  .agent-hud[hidden] { display: none; }
+  .hud-run-controls { display: flex; gap: 6px; }
+  .hud-btn {
+    font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+    padding: 3px 8px; border-radius: 6px; cursor: pointer;
+    background: var(--surface-2, rgba(255,255,255,0.08)); color: var(--text);
+    border: 1px solid var(--border); transition: all 0.15s;
+  }
+  .hud-btn:hover { background: var(--primary-light, rgba(45,212,191,0.15)); border-color: var(--primary); color: var(--primary); }
+  .hud-btn.hud-stop { color: var(--error); border-color: rgba(250,62,62,0.4); }
+  .hud-btn.hud-stop:hover { background: rgba(250,62,62,0.15); border-color: var(--error); color: #ff8585; }
+  .hud-btn[hidden] { display: none; }
+  @keyframes hudIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+  .hud-scan {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    box-shadow: 0 0 12px var(--primary);
+    animation: scanmove 2.2s linear infinite;
+    opacity: 0.85;
+  }
+  @keyframes scanmove { 0% { top: 4%; } 50% { top: 96%; } 100% { top: 4%; } }
+
+  .hud-row { display: flex; gap: 12px; align-items: center; }
+
+  .hud-bot {
+    position: relative;
+    width: 56px; height: 56px; flex: 0 0 auto;
+    border-radius: 14px;
+    background: radial-gradient(circle at 50% 35%, #1b2550, #0c1030);
+    border: 1px solid rgba(74,141,247,0.5);
+    box-shadow: 0 0 18px rgba(74,141,247,0.25), inset 0 0 14px rgba(0,0,0,0.6);
+    display: grid; place-items: center;
+    overflow: hidden;
+  }
+  .bot-eye {
+    position: absolute; top: 19px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 10px var(--primary), 0 0 4px #fff inset;
+    animation: blink 1.6s infinite;
+  }
+  .bot-eye:first-child { left: 15px; }
+  .bot-eye:last-child { right: 15px; animation-delay: 0.2s; }
+  @keyframes blink { 0%,92%,100% { transform: scaleY(1); opacity: 1; } 96% { transform: scaleY(0.1); opacity: 0.5; } }
+  .bot-mouth {
+    position: absolute; bottom: 13px; width: 22px; height: 4px; border-radius: 3px;
+    background: rgba(74,141,247,0.5);
+    box-shadow: 0 0 8px rgba(74,141,247,0.4);
+    animation: mouthPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes mouthPulse { 0%,100% { width: 14px; } 50% { width: 26px; } }
+  .bot-grid {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(74,141,247,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(74,141,247,0.12) 1px, transparent 1px);
+    background-size: 8px 8px;
+    opacity: 0.5;
+    animation: gridShift 4s linear infinite;
+  }
+  @keyframes gridShift { from { background-position: 0 0; } to { background-position: 8px 8px; } }
+
+  .hud-readout { flex: 1; min-width: 0; }
+  .hud-state {
+    font-size: 11px; font-weight: 800; letter-spacing: 2px;
+    color: var(--primary);
+    text-shadow: 0 0 10px rgba(74,141,247,0.6);
+    font-family: 'Courier New', monospace;
+  }
+  .hud-objective {
+    font-size: 11px; color: rgba(207,224,255,0.75);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin: 2px 0;
+  }
+  .hud-action {
+    font-size: 11px; font-weight: 600; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: 'Courier New', monospace;
+  }
+  .hud-eq { display: flex; gap: 3px; align-items: flex-end; height: 12px; margin-top: 6px; }
+  .hud-eq i {
+    width: 3px; height: 100%; border-radius: 2px;
+    background: var(--primary);
+    box-shadow: 0 0 6px var(--primary);
+    transform-origin: bottom;
+    animation: eq 0.9s ease-in-out infinite;
+  }
+  .hud-eq i:nth-child(2){ animation-delay: 0.15s; }
+  .hud-eq i:nth-child(3){ animation-delay: 0.30s; }
+  .hud-eq i:nth-child(4){ animation-delay: 0.45s; }
+  .hud-eq i:nth-child(5){ animation-delay: 0.60s; }
+  @keyframes eq { 0%,100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+  .hud-foot { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .hud-steps { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: rgba(207,224,255,0.6); font-family: 'Courier New', monospace; white-space: nowrap; }
+  .hud-track { flex: 1; height: 4px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .hud-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), #7af); box-shadow: 0 0 10px var(--primary); transition: width 0.4s ease; }
+  .hud-learn { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; color: #7af; font-family: 'Courier New', monospace; white-space: nowrap; text-shadow: 0 0 8px rgba(119,170,255,0.5); cursor: pointer; }
+  .hud-clear { font-family: 'Courier New', monospace; font-size: 8px; font-weight: 700; letter-spacing: 1px; color: #ff8a8a; background: rgba(250,62,62,0.12); border: 1px solid rgba(250,62,62,0.4); border-radius: 4px; padding: 2px 6px; cursor: pointer; white-space: nowrap; }
+  .hud-clear:hover { background: rgba(250,62,62,0.25); }
+
+  .agent-hud.state-planning { border-color: rgba(74,141,247,0.6); box-shadow: 0 0 0 1px rgba(74,141,247,0.2), 0 8px 30px rgba(10,12,40,0.45), inset 0 0 22px rgba(74,141,247,0.14); }
+  .agent-hud.state-planning .hud-state { color: #6ea8ff; text-shadow: 0 0 10px rgba(110,168,255,0.7); }
+  .agent-hud.state-planning .hud-scan { background: linear-gradient(90deg, transparent, #6ea8ff, transparent); box-shadow: 0 0 12px #6ea8ff; }
+
+  .agent-hud.state-executing { border-color: rgba(66,183,42,0.6); box-shadow: 0 0 0 1px rgba(66,183,42,0.2), 0 8px 30px rgba(10,40,20,0.45), inset 0 0 22px rgba(66,183,42,0.14); }
+  .agent-hud.state-executing .hud-state { color: #5fe06a; text-shadow: 0 0 10px rgba(95,224,106,0.7); }
+  .agent-hud.state-executing .bot-eye, .agent-hud.state-executing .hud-eq i { background: #5fe06a; box-shadow: 0 0 10px #5fe06a; }
+  .agent-hud.state-executing .hud-scan { background: linear-gradient(90deg, transparent, #5fe06a, transparent); box-shadow: 0 0 12px #5fe06a; }
+
+  .agent-hud.state-waiting { border-color: rgba(247,185,40,0.6); box-shadow: 0 0 0 1px rgba(247,185,40,0.2), 0 8px 30px rgba(40,30,10,0.45), inset 0 0 22px rgba(247,185,40,0.14); }
+  .agent-hud.state-waiting .hud-state { color: #ffce4d; text-shadow: 0 0 10px rgba(255,206,77,0.7); }
+  .agent-hud.state-waiting .bot-eye, .agent-hud.state-waiting .hud-eq i { background: #ffce4d; box-shadow: 0 0 10px #ffce4d; }
+  .agent-hud.state-waiting .hud-scan { background: linear-gradient(90deg, transparent, #ffce4d, transparent); box-shadow: 0 0 12px #ffce4d; }
+
+  .agent-hud.state-verifying { border-color: rgba(170,90,255,0.6); }
+  .agent-hud.state-verifying .hud-state { color: #c08bff; text-shadow: 0 0 10px rgba(192,139,255,0.7); }
+  .agent-hud.state-verifying .bot-eye, .agent-hud.state-verifying .hud-eq i { background: #c08bff; box-shadow: 0 0 10px #c08bff; }
+
+  .agent-hud.state-done { border-color: rgba(66,183,42,0.8); }
+  .agent-hud.state-done .hud-state { color: #5fe06a; text-shadow: 0 0 12px rgba(95,224,106,0.9); }
+  .agent-hud.state-done .bot-eye { background: #5fe06a; box-shadow: 0 0 12px #5fe06a; animation: blink 0.6s infinite; }
+  .agent-hud.state-done .hud-eq i { background: #5fe06a; animation: eq 0.5s ease-in-out infinite; }
+
+  .agent-hud.state-failed { border-color: rgba(250,62,62,0.8); }
+  .agent-hud.state-failed .hud-state { color: #ff6b6b; text-shadow: 0 0 12px rgba(255,107,107,0.9); }
+  .agent-hud.state-failed .bot-eye { background: #ff6b6b; box-shadow: 0 0 12px #ff6b6b; }
+
+  .agent-hud.state-idle { opacity: 0.6; }
+
+  /* --- Memory Tab --- */
+  .memory-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px; }
+  .memory-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .memory-actions { display: flex; gap: 6px; }
+  .mem-btn { font-family: inherit; font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+  .mem-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .mem-btn.mem-danger { color: #ff8a8a; border-color: rgba(250,62,62,0.4); }
+  .mem-btn.mem-danger:hover { background: rgba(250,62,62,0.15); }
+  .memory-meta { padding: 0 14px 10px; font-size: 11px; color: var(--text-tertiary); }
+  .memory-list { flex: 1; overflow-y: auto; padding: 0 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .mem-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; border-left: 3px solid var(--primary); }
+  .mem-card.success { border-left-color: #42b72a; }
+  .mem-card.failed { border-left-color: #fa3e3e; }
+  .mem-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .mem-objective { font-size: 12.5px; font-weight: 700; color: var(--text); line-height: 1.35; }
+  .mem-badge { font-size: 9px; font-weight: 800; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 99px; white-space: nowrap; }
+  .mem-badge.success { background: rgba(66,183,42,0.15); color: #5fe06a; }
+  .mem-badge.failed { background: rgba(250,62,62,0.15); color: #ff8a8a; }
+  .mem-site { font-size: 10px; color: var(--text-tertiary); font-family: monospace; margin-bottom: 6px; }
+  .mem-lesson { font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; }
+  .mem-detail { font-size: 10.5px; color: var(--text-tertiary); margin-top: 6px; line-height: 1.4; }
+  .mem-detail b { color: var(--text-secondary); font-weight: 700; }
+  .mem-empty { text-align: center; color: var(--text-tertiary); font-size: 12px; padding: 40px 16px; }
+
+  /* ===== Premium polish: PRO badge + input focus glow ===== */
+  .pro-badge {
+    font-size: 8px; font-weight: 800; letter-spacing: 0.6px;
+    padding: 1px 5px; border-radius: 5px; vertical-align: middle;
+    background: linear-gradient(135deg, var(--primary), #7a5cff);
+    color: #fff; box-shadow: 0 1px 6px var(--primary-glow);
+    margin-left: 4px;
+  }
+  input:focus, textarea:focus, .input-wrap:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+  }
+
+  /* ===== Technical Agent HUD (more technical) ===== */
+  .hud-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hud-model {
+    font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: 0.3px;
+    color: var(--primary); background: var(--primary-light);
+    padding: 1px 7px; border-radius: 6px; border: 1px solid var(--primary-glow);
+    max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hud-signal { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; margin-left: auto; }
+  .hud-signal i {
+    width: 3px; background: rgba(255,255,255,0.18); border-radius: 1px;
+    animation: sig 1.1s ease-in-out infinite;
+  }
+  .hud-signal i:nth-child(1){ height: 35%; animation-delay: 0s; }
+  .hud-signal i:nth-child(2){ height: 60%; animation-delay: 0.18s; }
+  .hud-signal i:nth-child(3){ height: 85%; animation-delay: 0.36s; }
+  .hud-signal i:nth-child(4){ height: 100%; animation-delay: 0.54s; }
+  .hud-signal.s-weak i:nth-child(3), .hud-signal.s-weak i:nth-child(4) { background: rgba(255,255,255,0.1); }
+  .hud-signal.s-strong i { background: var(--success); box-shadow: 0 0 6px rgba(95,224,106,0.6); }
+  @keyframes sig { 0%,100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } }
+  .hud-log {
+    margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.07);
+    font-family: var(--mono); font-size: 9.5px; line-height: 1.5; color: var(--text-secondary);
+    max-height: 78px; overflow-y: auto; display: flex; flex-direction: column-reverse; gap: 1px;
+  }
+  .hud-log .lg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hud-log .lg .t { color: var(--text-tertiary); }
+  .hud-log .lg.ok .m { color: var(--success); }
+  .hud-log .lg.err .m { color: var(--error); }
+  .hud-log .lg.info .m { color: var(--primary); }
+  .hud-latency {
+    font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+    color: rgba(207,224,255,0.6);
+  }
+
+  /* ===== Settings Tab ===== */
+  .tab-content#tab-settings { background: var(--bg); }
+  .settings-scroll { flex: 1; overflow-y: auto; padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .settings-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: 0 1px 0 rgba(255,255,255,0.02);
+  }
+  .settings-title {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .settings-title span { font-size: 14px; filter: drop-shadow(0 0 6px var(--primary-glow)); }
+  .settings-sub { font-size: 10.5px; color: var(--text-tertiary); margin-bottom: 10px; line-height: 1.5; }
+  .set-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .set-row label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+  .set-row input[type="password"], .set-row input[type="text"] {
+    flex: 1; min-width: 140px; padding: 8px 12px; border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
+    font-family: var(--mono); font-size: 11.5px; outline: none;
+  }
+  .set-status { font-size: 10.5px; font-weight: 600; color: var(--text-secondary); }
+  .set-status.ok { color: var(--success); }
+  .set-status.err { color: var(--error); }
+  .set-status.warn { color: var(--warning); }
+  .model-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .model-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-secondary);
+  }
+  .model-item .model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .model-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--text-tertiary); }
+  .model-item.ok .model-dot { background: var(--success); box-shadow: 0 0 6px rgba(95,224,106,0.6); }
+  .model-item.err .model-dot { background: var(--error); }
+  .model-item.pending .model-dot { background: var(--warning); animation: blink 0.8s infinite; }
+  .model-item .model-state { font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+  .model-item.ok .model-state { color: var(--success); }
+  .model-item.err .model-state { color: var(--error); }
+  .model-item.pending .model-state { color: var(--warning); }
+  .set-about { text-align: center; }
+  .site-link {
+    display: inline-block; font-size: 12px; font-weight: 600; color: var(--primary);
+    text-decoration: none; padding: 8px 14px; border: 1px solid var(--primary-glow);
+    border-radius: var(--radius-sm); background: var(--primary-light); transition: all 0.2s;
+  }
+  .site-link:hover { background: var(--primary); color: #04110f; box-shadow: 0 2px 10px var(--primary-glow); }
+  .set-version { font-size: 10px; color: var(--text-tertiary); margin-top: 8px; font-family: var(--mono); }
+
+  /* ===== App Footer ===== */
+  .app-footer {
+    position: relative; z-index: 2; display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 7px 16px; background: var(--surface);
+    border-top: 1px solid var(--border); font-size: 10px;
+  }
+  .footer-link {
+    color: var(--primary); text-decoration: none; font-weight: 600;
+    transition: color 0.2s; font-family: var(--mono);
+  }
+  .footer-link:hover { color: var(--primary-dark); text-decoration: underline; }
+  .footer-sep { color: var(--text-tertiary); }
+  .footer-ver { color: var(--text-tertiary); font-family: var(--mono); }
+
   </style>
 </head>
 <body>
+
   <!-- Header -->
   <div class="header">
     <div class="logo">S</div>
-    <h1>Synapse</h1>
-    <div class="status"><span class="dot"></span> <span id="page-type-label">Facebook</span></div>
+      <div class="header-info">
+        <h1>Synapse <span class="pro-badge">PRO</span></h1>
+        <div class="sub">Autonomous Browser Agent</div>
+      </div>
+    <button class="theme-btn" id="theme-toggle" title="Toggle dark mode">🌙</button>
+    <div class="header-status"><span class="dot"></span> <span id="page-type-label">Inactive</span></div>
   </div>
 
   <!-- Page data bar -->
-  <div class="page-data" id="page-data-bar">
+  <div class="page-bar">
     <span class="label">Page:</span>
     <span class="value" id="page-data-name">—</span>
-    <span class="pill page" id="page-type-pill">Page</span>
+    <span class="pill page" id="page-type-pill">Ready</span>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab active" data-tab="chat">AI Chat</button>
-    <button class="tab" data-tab="generate">Generate</button>
-    <button class="tab" data-tab="tools">Tools</button>
+    <button class="tab active" data-tab="chat"><span class="tab-icon">💬</span>Chat</button>
+    <button class="tab" data-tab="generate"><span class="tab-icon">✨</span>Generate</button>
+    <button class="tab" data-tab="content"><span class="tab-icon">🎨</span>Content</button>
+    <button class="tab" data-tab="tools"><span class="tab-icon">🛠️</span>Tools</button>
+    <button class="tab" data-tab="memory"><span class="tab-icon">🧠</span>Memory</button>
+    <button class="tab" data-tab="settings"><span class="tab-icon">⚙️</span>Settings</button>
   </div>
 
   <!-- Content -->
@@ -252,82 +1143,624 @@
 
     <!-- AI Chat Tab -->
     <div class="tab-content active" id="tab-chat">
+      <div class="chat-header">
+        <div class="avatar">S</div>
+        <div>        <div class="name">Synapse AI</div><div class="sub">Universal browser agent — manage any site</div></div>
+      </div>
+
+      <!-- Technical Agent HUD -->
+      <div class="agent-hud" id="agent-hud" hidden>
+        <div class="hud-scan"></div>
+        <div class="hud-row">
+          <div class="hud-bot">
+            <div class="bot-eye"></div>
+            <div class="bot-eye"></div>
+            <div class="bot-mouth"></div>
+            <div class="bot-grid"></div>
+          </div>
+          <div class="hud-readout">
+            <div class="hud-top">
+              <span class="hud-state" id="hud-state">STANDBY</span>
+              <span class="hud-model" id="hud-model">—</span>
+              <span class="hud-signal" id="hud-signal"><i></i><i></i><i></i><i></i></span>
+            </div>
+            <div class="hud-objective" id="hud-objective">—</div>
+            <div class="hud-action" id="hud-action">initializing…</div>
+            <div class="hud-eq"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="hud-log" id="hud-log"></div>
+          </div>
+        </div>
+        <div class="hud-foot">
+          <span class="hud-steps" id="hud-steps">STEP 0 / 15</span>
+          <span class="hud-latency" id="hud-latency">— ms</span>
+          <span class="hud-learn" id="hud-learn">🧠 0 learned</span>
+          <div class="hud-run-controls">
+            <button class="hud-btn" id="agent-pause" hidden>⏸ Pause</button>
+            <button class="hud-btn hud-stop" id="agent-stop" hidden>⏹ Stop</button>
+          </div>
+          <button class="hud-clear" id="memory-clear" title="Wipe learned memory">RESET</button>
+          <div class="hud-track"><div class="hud-fill" id="hud-fill"></div></div>
+        </div>
+      </div>
+
       <div class="messages" id="chat-messages">
         <div class="msg assistant">
           <div class="msg-avatar">S</div>
-          <div class="msg-bubble">Hi! I'm your AI assistant. Ask me anything about your Facebook Page.</div>
+          <div class="msg-bubble">Hi! I'm Synapse — your universal browser AI. I can navigate, fill forms, click, extract data, and automate ANY website. Need to set up Supabase, deploy on Vercel, configure Cloudflare, research topics, manage social media, or automate multi-step workflows? Just tell me what you want to do.</div>
         </div>
       </div>
       <div class="suggestions" id="suggestions">
-        <button class="suggestion-chip" data-prompt="Create a Facebook post about our new product">📝 Create a post</button>
-        <button class="suggestion-chip" data-prompt="Analyze my page engagement">📊 Analyze page</button>
-        <button class="suggestion-chip" data-prompt="Suggest content ideas for this week">💡 Content ideas</button>
+        <button class="suggestion-chip" data-prompt="Go to supabase.com, open my project, and show me the database tables">🗄️ Supabase</button>
+        <button class="suggestion-chip" data-prompt="Open vercel.com and show me my deployments and latest build status">▲ Vercel</button>
+        <button class="suggestion-chip" data-prompt="Go to cloudflare.com and check my DNS settings">☁️ Cloudflare</button>
+        <button class="suggestion-chip" data-prompt="Research the latest trends in AI and give me a summary">🔍 Research</button>
+        <button class="suggestion-chip" data-prompt="Extract all links and images from this page">📋 Extract</button>
+      </div>
+      <div id="react-progress" style="display:none;padding:6px 12px;border-top:1px solid var(--border);background:var(--surface);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div id="react-step-label" style="font-size:11px;color:var(--text-secondary);font-weight:500;flex:1;">Step 1 of 15</div>
+          <div id="react-tool-label" style="font-size:10px;color:var(--text-tertiary);font-family:monospace;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+          <div id="react-progress-bar" style="width:0%;height:100%;background:var(--primary);border-radius:2px;transition:width 0.3s ease;"></div>
+        </div>
       </div>
       <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="Ask Synapse anything..." />
-        <button id="chat-send">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
+        <div class="input-wrap">
+          <input type="text" id="chat-input" placeholder="Ask Synapse anything..." />
+          <button id="chat-enhance" class="enhance-btn" title="Enhance your prompt into a reliable, detailed instruction">✨ Enhance</button>
+          <button id="chat-send">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Generate Tab -->
     <div class="tab-content" id="tab-generate">
-      <div class="generate-content">
-        <div class="templates" id="templates">
-          <button data-prompt="Create a post announcing a new product launch. Include excitement and key features.">Product Launch</button>
-          <button data-prompt="Create a question-based post to drive engagement and comments.">Engagement</button>
-          <button data-prompt="Create a promotional post with a special offer or discount.">Promotion</button>
-          <button data-prompt="Create a post inviting people to an upcoming event or webinar.">Event</button>
-          <button data-prompt="Create a post celebrating a milestone or achievement.">Milestone</button>
+      <div class="generate-wrap">
+        <div class="generate-header">
+          <span class="icon">✨</span>
+          <div>          <div class="text">AI Post Generator</div><div class="sub">Create platform-ready posts with AI — Facebook, X, LinkedIn & more</div></div>
         </div>
-        <textarea id="generate-prompt" placeholder="Describe the post you want to create..."></textarea>
+
+        <div class="templates" id="templates">
+          <button data-prompt="Create an exciting post announcing a new product launch. Include key features and benefits.">🚀 Product Launch</button>
+          <button data-prompt="Create a question-based post to drive engagement and comments from followers.">💬 Engagement</button>
+          <button data-prompt="Create a promotional post with a special offer, discount, or limited-time deal.">🏷️ Promotion</button>
+          <button data-prompt="Create a post inviting people to an upcoming event, webinar, or live stream.">📅 Event</button>
+          <button data-prompt="Create a post celebrating a milestone, anniversary, or achievement.">🎉 Milestone</button>
+          <button data-prompt="Create a post showcasing a customer testimonial or success story.">⭐ Testimonial</button>
+        </div>
+
+        <div class="config-row">
+          <div class="config-group">
+            <label>Platform</label>
+            <div class="options" id="platform-options">
+              <button class="opt-btn active" data-value="facebook">Facebook</button>
+              <button class="opt-btn" data-value="twitter">X / Twitter</button>
+              <button class="opt-btn" data-value="linkedin">LinkedIn</button>
+              <button class="opt-btn" data-value="instagram">Instagram</button>
+              <button class="opt-btn" data-value="threads">Threads</button>
+              <button class="opt-btn" data-value="generic">Generic</button>
+            </div>
+          </div>
+          <div class="config-group">
+            <label>Tone</label>
+            <div class="options" id="tone-options">
+              <button class="opt-btn active" data-value="professional">Professional</button>
+              <button class="opt-btn" data-value="casual">Casual</button>
+              <button class="opt-btn" data-value="enthusiastic">Enthusiastic</button>
+              <button class="opt-btn" data-value="humorous">Humorous</button>
+            </div>
+          </div>
+          <div class="config-group">
+            <label>Length</label>
+            <div class="options" id="length-options">
+              <button class="opt-btn" data-value="short">Short</button>
+              <button class="opt-btn active" data-value="medium">Medium</button>
+              <button class="opt-btn" data-value="long">Long</button>
+            </div>
+          </div>
+        </div>
+
+        <textarea id="generate-prompt" placeholder="Describe the post you want to create... e.g. 'A post about our new AI feature for small businesses'"></textarea>
         <div class="count"><span id="char-count">0</span> characters</div>
         <div class="btn-row">
-          <button class="btn btn-primary" id="generate-btn">✨ Generate</button>
+          <button class="btn btn-primary" id="generate-btn">✨ Generate Post</button>
           <button class="btn btn-secondary" id="copy-btn" style="display:none;">📋 Copy</button>
         </div>
         <div class="generate-result" id="generate-result"></div>
+        <div class="gen-actions" id="gen-actions" style="display:none;">
+          <button class="btn btn-facebook" id="post-to-fb-btn">📘 Post to Facebook</button>
+        </div>
+        <div class="remix-bar" id="remix-bar" style="display:none;">
+          <button class="remix-btn" data-angle="funnier">😂 Make Funnier</button>
+          <button class="remix-btn" data-angle="shorter">📏 Make Shorter</button>
+          <button class="remix-btn" data-angle="engaging">💬 More Engaging</button>
+          <button class="remix-btn" data-angle="story">📖 Story Version</button>
+          <button class="remix-btn" data-angle="hook">🎣 Stronger Hook</button>
+        </div>
+        <div class="health-score" id="health-score">
+          <div class="score-header">
+            <span class="label">📊 Post Health Score</span>
+            <span class="value" id="hs-overall">—</span>
+          </div>
+          <div class="score-breakdown" id="hs-breakdown"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Creator Tab -->
+    <div class="tab-content" id="tab-content">
+      <div class="tools-scroll" style="padding:12px 18px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Smart Reply -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>💬</span> Smart Reply <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Extract comments from the page and generate AI replies in your brand voice.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-extract-comments">📥 Extract Comments</button>
+            <button class="tool-btn" id="cr-reply-all" style="display:none;">🤖 Reply to All</button>
+          </div>
+          <div id="cr-comments-result" class="generated-output" style="margin-top:8px;max-height:250px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Hashtag Research -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>🏷️</span> Hashtag Research <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Extract all hashtags from the page with frequency counts. Find related tags.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-extract-hashtags">🔍 Extract Hashtags</button>
+          </div>
+          <div class="tool-input-row" style="margin-top:6px;">
+            <input type="text" id="cr-hashtag-topic" placeholder="Topic (e.g. marketing, AI)..." />
+            <button class="tool-btn" id="cr-suggest-hashtags">Suggest</button>
+          </div>
+          <div id="cr-hashtags-result" class="generated-output" style="margin-top:8px;max-height:200px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Post Analyzer -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>📊</span> Post Analyzer <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Analyze engagement metrics for visible posts on this page.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-analyze-posts">📈 Analyze Posts</button>
+          </div>
+          <div id="cr-analyze-result" class="generated-output" style="margin-top:8px;max-height:250px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Content Repurpose -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>🔄</span> Content Repurpose <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Rewrite existing content for different platforms (LinkedIn, Instagram, Twitter, etc.)
+          </div>
+          <div class="tool-input-row" style="margin-top:4px;">
+            <input type="text" id="cr-repurpose-input" placeholder="Paste content or post text..." />
+          </div>
+          <div class="config-row" style="margin:6px 0;">
+            <select id="cr-repurpose-platform" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-family:inherit;color:var(--text);outline:none;">
+              <option value="linkedin">LinkedIn</option>
+              <option value="instagram">Instagram</option>
+              <option value="twitter">X / Twitter</option>
+              <option value="threads">Threads</option>
+              <option value="tiktok">TikTok</option>
+            </select>
+            <button class="tool-btn" id="cr-repurpose-btn">🔄 Adapt</button>
+          </div>
+          <div id="cr-repurpose-result" class="generated-output" style="margin-top:8px;max-height:200px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Content Idea Generator -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>💡</span> Content Ideas <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Get AI-generated post ideas based on your page's niche and audience.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-ideas">✨ Generate 10 Ideas</button>
+          </div>
+          <div id="cr-ideas-result" class="generated-output" style="margin-top:8px;max-height:250px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Best Time to Post -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>⏰</span> Best Time to Post <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Analyze visible posts to find when your audience is most engaged.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-best-time">📈 Analyze Timing</button>
+          </div>
+          <div id="cr-best-time-result" class="generated-output" style="margin-top:8px;max-height:200px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Post Draft Manager -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>📝</span> Post Drafts <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Save generated posts as drafts. Export or delete them anytime.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-save-draft" style="display:none;">💾 Save Current as Draft</button>
+            <button class="tool-btn" id="cr-view-drafts">📂 View Drafts (<span id="cr-draft-count">0</span>)</button>
+            <button class="tool-btn" id="cr-export-drafts" style="display:none;">📤 Export</button>
+            <button class="tool-btn" id="cr-clear-drafts" style="display:none;">🗑️ Clear All</button>
+          </div>
+          <div id="cr-drafts-result" class="generated-output" style="margin-top:8px;max-height:200px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Swipe File / Save Inspiration -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>📌</span> Swipe File <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Save inspiring posts from any page to your personal inspiration board.
+          </div>
+          <div class="btn-row" style="gap:6px;flex-wrap:wrap;">
+            <button class="tool-btn" id="cr-save-post">📥 Save Current Post</button>
+            <button class="tool-btn" id="cr-view-swipe">📖 View Saved (<span id="cr-swipe-count">0</span>)</button>
+            <button class="tool-btn" id="cr-export-swipe" style="display:none;">📤 Export</button>
+          </div>
+          <div id="cr-swipe-result" class="generated-output" style="margin-top:8px;max-height:200px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Hook Generator -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>🎣</span> Hook Generator <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Generate 10 attention-grabbing hooks for any topic.
+          </div>
+          <div class="tool-input-row">
+            <input type="text" id="cr-hook-topic" placeholder="Post topic..." />
+            <button class="tool-btn" id="cr-hook-gen">🎣 Generate Hooks</button>
+          </div>
+          <div id="cr-hook-result" class="generated-output" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Content Series Planner -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>📅</span> Content Series <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Plan a themed content series with AI — perfect for weekly themes, challenges, and multi-part content.
+          </div>
+          <div class="tool-input-row">
+            <input type="text" id="cr-series-theme" placeholder="Series theme (e.g. '7 days of comedy')" style="flex:1;" />
+            <input type="number" id="cr-series-days" placeholder="Days" style="width:50px;" min="3" max="30" value="5" />
+          </div>
+          <div class="btn-row" style="gap:6px;margin-top:4px;">
+            <button class="tool-btn" id="cr-series-plan">📅 Plan Series</button>
+          </div>
+          <div id="cr-series-result" class="generated-output" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <!-- Multi-Platform Export -->
+        <div class="tool-section">
+          <div class="tool-section-title"><span>🌐</span> Multi-Platform Export <span class="badge">NEW</span></div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5;">
+            Take any post content and adapt it for every major platform at once.
+          </div>
+          <div class="tool-input-row">
+            <input type="text" id="cr-multi-input" placeholder="Paste your post content..." />
+          </div>
+          <div class="btn-row" style="gap:6px;margin-top:4px;">
+            <button class="tool-btn" id="cr-multi-export">🌐 Export to All Platforms</button>
+          </div>
+          <div id="cr-multi-result" class="generated-output" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:11px;line-height:1.5;white-space:pre-wrap;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:none;"></div>
+        </div>
+
+        <div style="font-size:10px;color:var(--text-tertiary);text-align:center;padding:8px;">
+          Powered by NVIDIA NIM · Content tools work on any page
+        </div>
       </div>
     </div>
 
     <!-- Tools Tab -->
     <div class="tab-content" id="tab-tools">
-      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;">
-        <div style="font-size:11px;font-weight:600;color:#65676B;text-transform:uppercase;letter-spacing:0.5px;padding:4px 0;">Page Navigation</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="tool-btn" data-tool="scroll_to_top">⬆️ Scroll Top</button>
-          <button class="tool-btn" data-tool="scroll_to_bottom">⬇️ Scroll Bottom</button>
+      <div class="offline-banner" id="tools-offline">
+        <span class="icon">🌐</span>
+        <div class="title">No page detected</div>
+        <div class="sub">Navigate to any webpage to use automation tools</div>
+      </div>
+      <div class="tools-search">
+        <div class="tools-search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="tools-search-input" placeholder="Search tools..." />
         </div>
+      </div>
+      <div class="tools-content">
+        <div class="tools-scroll">
 
-        <div style="font-size:11px;font-weight:600;color:#65676B;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;">Post Actions</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="tool-btn" data-tool="like_first_post">👍 Like First Post</button>
-          <button class="tool-btn" data-tool="click_like">❤️ Click Like</button>
-          <button class="tool-btn" data-tool="click_comment">💬 Open Comments</button>
-          <button class="tool-btn" data-tool="click_share">🔗 Click Share</button>
-        </div>
+          <div class="tool-section">
+            <div class="tool-section-title"><span>⚡</span> Navigation & Scroll <span class="badge">4</span></div>
+            <div class="tool-grid">
+              <button class="tool-btn" data-tool="scroll_to_bottom">⬇️ Bottom</button>
+              <button class="tool-btn" data-tool="scroll_to_top">⬆️ Top</button>
+              <button class="tool-btn" data-tool="scroll_to_element">🎯 Scroll To</button>
+              <button class="tool-btn" data-tool="scroll_load_more">📜 Load More</button>
+            </div>
+          </div>
 
-        <div style="font-size:11px;font-weight:600;color:#65676B;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;">Page Content</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="tool-btn" data-tool="get_visible_text">📄 Get Page Text</button>
-          <button class="tool-btn" data-tool="highlight_elements">🔦 Highlight Posts</button>
-        </div>
+          <div class="tool-section">
+            <div class="tool-section-title"><span>🌐</span> Browser Control <span class="badge">7</span></div>
+            <div class="tool-grid">
+              <button class="tool-btn" data-browser="navigate_to">🔗 Go to URL</button>
+              <button class="tool-btn" data-browser="open_tab">📂 New Tab</button>
+              <button class="tool-btn" data-browser="switch_tab">🔄 Switch Tab</button>
+              <button class="tool-btn" data-browser="close_tab">❌ Close Tab</button>
+              <button class="tool-btn" data-browser="list_tabs">📑 List Tabs</button>
+              <button class="tool-btn" data-browser="download_url">⬇️ Download</button>
+              <button class="tool-btn" data-browser="list_downloads">📥 Downloads</button>
+            </div>
+            <div class="tool-input-row" style="margin-top:6px;">
+              <input type="text" id="tool-browser-url" placeholder="URL to navigate/open/download..." />
+              <button class="tool-btn" id="tool-browser-go" style="display:none;">Go</button>
+            </div>
+          </div>
 
-        <div style="font-size:11px;font-weight:600;color:#65676B;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;">Custom</div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="tool-selector" placeholder="CSS selector..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;" />
-          <button class="tool-btn" id="tool-click-el" style="flex-shrink:0;">Click</button>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="tool-fill-text" placeholder="Text to type..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;" />
-          <button class="tool-btn" id="tool-fill-btn" style="flex-shrink:0;">Fill</button>
-        </div>
+          <div class="tool-section">
+            <div class="tool-section-title"><span>🖱️</span> Click & Interact <span class="badge">4</span></div>
+            <div class="tool-grid">
+              <button class="tool-btn" data-tool="click_element">👆 Click Element</button>
+              <button class="tool-btn" data-tool="click_all_buttons_matching">👆 Click All</button>
+              <button class="tool-btn" data-tool="find_and_click">🔍 Find & Click</button>
+              <button class="tool-btn" data-tool="hide_element">🙈 Hide Element</button>
+            </div>
+          </div>
 
-        <div id="tool-result" style="display:none;margin-top:8px;padding:10px;border-radius:8px;background:#F7F8FA;border:1px solid var(--border);font-size:12px;line-height:1.5;white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
+          <div class="tool-section">
+            <div class="tool-section-title"><span>⌨️</span> Fill & Type <span class="badge">2</span></div>
+            <div class="tool-grid">
+              <button class="tool-btn" data-tool="fill_input">✏️ Fill Input</button>
+              <button class="tool-btn" data-tool="simulate_typing">⌨️ Simulate Type</button>
+            </div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-title"><span>📋</span> Extract Data <span class="badge">6</span></div>
+            <div class="tool-grid">
+              <button class="tool-btn" data-tool="get_page_text">📄 Page Text</button>
+              <button class="tool-btn" data-tool="extract_images">🖼️ Images</button>
+              <button class="tool-btn" data-tool="extract_links">🔗 Links</button>
+              <button class="tool-btn" data-tool="extract_video_sources">🎬 Videos</button>
+              <button class="tool-btn" data-tool="get_page_stats">📊 Stats</button>
+              <button class="tool-btn" data-tool="copy_all_text">📋 Copy Text</button>
+            </div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-title"><span>🔍</span> Highlight & Count <span class="badge">2</span></div>
+            <div class="tool-grid">
+              <button class="tool-btn" data-tool="highlight_elements">🔦 Highlight</button>
+              <button class="tool-btn" data-tool="count_elements">🔢 Count</button>
+            </div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-title"><span>🎬</span> Video Download <span class="badge">1</span></div>
+            <div class="tool-input-row">
+              <input type="text" id="tool-video-url" placeholder="Paste video URL..." />
+              <button class="tool-btn" id="tool-dl-url">⬇️ Download</button>
+            </div>
+            <div class="tool-hint">Paste a direct video URL to download it (CORS-permitted only)</div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-title"><span>⚡</span> Sequence Runner <span class="badge">1</span></div>
+            <div class="tool-input-row">
+              <input type="text" id="tool-sequence" placeholder="scroll_to_bottom | click_all_buttons_matching: Load More | extract_all_posts" />
+              <button class="tool-btn" id="tool-sequence-run">▶ Run</button>
+            </div>
+            <div class="tool-hint">Chain tools with | (2s apart). Example: scroll_to_bottom | click_all_buttons_matching: Load More</div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-title"><span>🛠️</span> Custom Selector <span class="badge">3</span></div>
+            <div class="tool-input-row">
+              <input type="text" id="tool-selector" placeholder="CSS selector..." />
+              <button class="tool-btn" id="tool-click-el">Click</button>
+              <button class="tool-btn" id="tool-scroll-el">Scroll To</button>
+            </div>
+            <div class="tool-input-row" style="margin-top:6px;">
+              <input type="text" id="tool-fill-text" placeholder="Text to type..." />
+              <button class="tool-btn" id="tool-fill-btn">Fill</button>
+            </div>
+            <div class="tool-hint">Enter a CSS selector and click Click / Scroll To / Fill</div>
+          </div>
+
+          <div id="tool-result" class="tool-result"></div>
+        </div>
       </div>
     </div>
 
+    <!-- Memory Tab -->
+    <div class="tab-content" id="tab-memory">
+      <div class="memory-header">
+        <div class="memory-title">🧠 Learned Memory</div>
+        <div class="memory-actions">
+          <button class="mem-btn" id="memory-refresh">↻ Refresh</button>
+          <button class="mem-btn mem-danger" id="memory-clear-2">🗑 Wipe</button>
+        </div>
+      </div>
+      <div class="memory-meta" id="memory-meta">No entries yet.</div>
+      <div class="memory-list" id="memory-list"></div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="tab-settings">
+      <div class="settings-scroll">
+        <div class="settings-card">
+          <div class="settings-title"><span>🔑</span> NVIDIA API Key</div>
+          <div class="settings-sub">Override the bundled key. Stored locally on this device only.</div>
+          <div class="set-row">
+            <input type="password" id="set-apikey" placeholder="nvapi-..." autocomplete="off" />
+            <button class="btn btn-primary" id="set-apikey-save">Save</button>
+          </div>
+          <div class="set-status" id="set-apikey-status"></div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title"><span>🛰️</span> Connection</div>
+          <div class="settings-sub">Verify the agent can reach the NVIDIA NIM API and see which models are live.</div>
+          <div class="set-row">
+            <button class="btn btn-secondary" id="set-test">Test Connection</button>
+            <span class="set-status" id="set-test-status"></span>
+          </div>
+          <div class="model-list" id="set-model-list"></div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-title"><span>🎨</span> Appearance</div>
+          <div class="set-row">
+            <label>Theme</label>
+            <div class="options" id="set-theme">
+              <button class="opt-btn active" data-value="dark">Dark</button>
+              <button class="opt-btn" data-value="light">Light</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card set-about">
+          <div class="settings-title"><span>🌐</span> About</div>
+          <a class="site-link" href="https://www.lxobsidianportal.co.za" target="_blank" rel="noopener noreferrer">🔗 Visit LX Obsidian Portal</a>
+          <div class="set-version">Synapse AI · v1.1.0 · Built by LX Obsidian Portal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Footer -->
+  <div class="app-footer">
+    <a class="footer-link" href="https://www.lxobsidianportal.co.za" target="_blank" rel="noopener noreferrer">🌐 LX Obsidian Portal</a>
+    <span class="footer-sep">·</span>
+    <span class="footer-ver">Synapse v1.1.0</span>
+  </div>
+
+  <!-- Onboarding -->
+  <div class="onboarding-overlay hidden" id="onboarding">
+    <div class="onboarding-card">
+      <div class="logo-area">
+        <div class="icon">🤖</div>
+        <h2>Welcome to Synapse <span class="pro-badge">PRO</span></h2>
+        <p>Synapse is an <strong>autonomous browser agent</strong> that observes any page, plans one action at a time, and executes it — navigating, filling forms, clicking, extracting data, and automating multi-step workflows across the web. Let's calibrate your creator profile so it sounds exactly like <strong>you</strong>.</p>
+      </div>
+
+      <div class="onboarding-steps" id="ob-steps">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+
+      <!-- Step 1: Basics -->
+      <div class="onboarding-step active" data-step="0">
+        <label>What's your page or brand name?</label>
+        <input type="text" id="ob-name" placeholder="e.g. Kairo Comedy" />
+        <label>What category best fits your content?</label>
+        <div class="opt-group" id="ob-category">
+          <button class="opt-btn" data-value="comedy"><span class="emoji">😂</span> Comedy</button>
+          <button class="opt-btn" data-value="education"><span class="emoji">📚</span> Education</button>
+          <button class="opt-btn" data-value="lifestyle"><span class="emoji">🌴</span> Lifestyle</button>
+          <button class="opt-btn" data-value="entertainment"><span class="emoji">🎬</span> Entertainment</button>
+          <button class="opt-btn" data-value="music"><span class="emoji">🎵</span> Music</button>
+          <button class="opt-btn" data-value="tech"><span class="emoji">💻</span> Technology</button>
+          <button class="opt-btn" data-value="business"><span class="emoji">💼</span> Business</option>
+          <button class="opt-btn" data-value="sports"><span class="emoji">🏀</span> Sports</button>
+          <button class="opt-btn" data-value="art"><span class="emoji">🎨</span> Art</button>
+          <button class="opt-btn" data-value="other"><span class="emoji">✨</span> Other</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Voice & Audience -->
+      <div class="onboarding-step" data-step="1">
+        <label>Describe your brand voice</label>
+        <div class="opt-group" id="ob-voice">
+          <button class="opt-btn" data-value="funny">😂 Funny / Sarcastic</button>
+          <button class="opt-btn" data-value="professional">💼 Professional</button>
+          <button class="opt-btn" data-value="casual">👋 Casual / Friendly</button>
+          <button class="opt-btn" data-value="inspirational">🌟 Inspirational</button>
+          <button class="opt-btn" data-value="educational">📖 Educational</button>
+          <button class="opt-btn" data-value="energetic">⚡ Energetic</button>
+        </div>
+        <label>Who's your target audience?</label>
+        <textarea id="ob-audience" placeholder="e.g. Young adults 18-35 who love stand-up comedy, meme culture, and relatable humor about daily life"></textarea>
+      </div>
+
+      <!-- Step 3: Goals & Themes -->
+      <div class="onboarding-step" data-step="2">
+        <label>What are your main content goals?</label>
+        <div class="opt-group" id="ob-goals">
+          <button class="opt-btn" data-value="reach">📈 Reach more people</button>
+          <button class="opt-btn" data-value="engagement">💬 Increase engagement</button>
+          <button class="opt-btn" data-value="community">🤝 Build community</button>
+          <button class="opt-btn" data-value="entertain">🎭 Entertain</button>
+          <button class="opt-btn" data-value="educate">📚 Share knowledge</button>
+          <button class="opt-btn" data-value="sales">💰 Drive sales</button>
+        </div>
+        <label>What topics/themes do you usually post about?</label>
+        <textarea id="ob-themes" placeholder="e.g. Relatable skits, parody videos, daily life observations, trending topics with a comedic twist"></textarea>
+      </div>
+
+      <!-- Step 4: Platforms & Posting -->
+      <div class="onboarding-step" data-step="3">
+        <label>How often do you post?</label>
+        <div class="opt-group" id="ob-frequency">
+          <button class="opt-btn" data-value="daily">Daily</button>
+          <button class="opt-btn" data-value="few-week">Few times a week</button>
+          <button class="opt-btn" data-value="weekly">Weekly</button>
+          <button class="opt-btn" data-value="few-month">Few times a month</button>
+        </div>
+        <label>Any topics or content types you avoid?</label>
+        <textarea id="ob-avoid" placeholder="e.g. Political topics, overly promotional content, controversial humor"></textarea>
+        <div class="hint">This helps me stay on-brand and avoid what doesn't work for you.</div>
+      </div>
+
+      <!-- Step 5: Summary & Scan -->
+      <div class="onboarding-step" data-step="4">
+        <label>Your Creator Profile</label>
+        <div class="onboarding-summary" id="ob-summary"></div>
+        <div class="hint" style="margin-top:-4px;">
+          <strong>Quick start:</strong> (1) open any website · (2) tell Synapse what to do in plain language · (3) watch it work in the live HUD · (4) use <em>Tools</em> for one-click extractions. Hop to your Facebook page so I can match your style.
+        </div>
+      </div>
+
+      <div class="onboarding-nav">
+        <button class="btn btn-skip" id="ob-skip">Skip setup</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-back" id="ob-back" style="display:none;">← Back</button>
+          <button class="btn btn-next" id="ob-next">Next →</button>
+          <button class="btn btn-finish" id="ob-finish" style="display:none;">🎭 Start Creating</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Bar (shown after onboarding) -->
+  <div class="profile-bar" id="profile-bar" style="display:none;">
+    <div class="avatar" id="prof-avatar">S</div>
+    <span class="name" id="prof-name">Creator</span>
+    <span class="tag" id="prof-tag">Comedy</span>
+    <button class="edit-btn" id="prof-edit">Edit</button>
+  </div>
+
+  <!-- Confirmation Dialog -->
+  <div id="confirm-dialog" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:24px;">
+    <div style="background:var(--surface);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:320px;width:100%;box-shadow:0 16px 48px rgba(0,0,0,0.2);animation:msgIn 0.2s ease-out;">
+      <div id="confirm-icon" style="font-size:28px;text-align:center;margin-bottom:10px;">⚠️</div>
+      <div id="confirm-title" style="font-size:14px;font-weight:700;text-align:center;margin-bottom:4px;color:var(--text);">Confirm Action</div>
+      <div id="confirm-desc" style="font-size:12px;text-align:center;color:var(--text-secondary);margin-bottom:16px;line-height:1.5;"></div>
+      <div style="display:flex;gap:8px;">
+        <button id="confirm-cancel" style="flex:1;padding:9px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;">Cancel</button>
+        <button id="confirm-ok" style="flex:1;padding:9px;border-radius:var(--radius-sm);border:none;background:var(--error);color:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;box-shadow:0 2px 8px rgba(250,62,62,0.2);">Confirm</button>
+      </div>
+    </div>
   </div>
 
   <script src="sidepanel.js"></script>

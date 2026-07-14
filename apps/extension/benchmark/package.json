@@ -1,0 +1,14 @@
+{
+  "name": "synapse-benchmark",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright-driven benchmark harness for the Synapse browser-agent extension (BU-Bench-style).",
+  "scripts": {
+    "bench": "node orchestrator.mjs",
+    "bench:nojudge": "NO_JUDGE=1 node orchestrator.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

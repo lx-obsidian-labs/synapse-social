@@ -7,6 +7,9 @@ node_modules
 out
 dist
 *.vsix
+*.zip
+.branches
+.temp
 .claude
 CLAUDE.md
 .DS_Store

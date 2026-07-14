@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synapse Social</title>
+  <title>Synapse AI</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #FFFFFF; color: #050505; }
     .header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #E4E6EB; }
-    .logo { width: 32px; height: 32px; background: #1877F2; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; }
+    .logo { width: 32px; height: 32px; background: linear-gradient(135deg, #6366F1, #8B5CF6); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; }
     .header h1 { font-size: 15px; font-weight: 600; flex: 1; }
     .status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #65676B; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #42B72A; }
@@ -19,13 +19,12 @@
     .card .name { font-size: 13px; font-weight: 600; }
     .card .sub { font-size: 11px; color: #65676B; }
     .btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; text-align: left; }
-    .btn-primary { background: #1877F2; color: white; }
-    .btn-primary:hover { background: #166FE5; }
+    .btn-primary { background: #6366F1; color: white; }
+    .btn-primary:hover { background: #4F46E5; }
     .btn-secondary { background: #E4E6EB; color: #050505; }
     .btn-secondary:hover { background: #D8DADE; }
-    .btn-icon { font-size: 16px; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-    .badge-page { background: #E7F3FF; color: #1877F2; }
+    .badge-page { background: #E7F3FF; color: #6366F1; }
     .badge-post { background: #E8F5E9; color: #42B72A; }
     .badge-inbox { background: #FFF3E0; color: #F7B928; }
     .badge-insights { background: #F3E5F5; color: #9C27B0; }
@@ -34,13 +33,13 @@
     .section-title { font-size: 11px; font-weight: 600; color: #65676B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding: 0 2px; }
     .actions { display: flex; flex-direction: column; gap: 6px; }
     .footer { padding: 10px 16px; border-top: 1px solid #E4E6EB; display: flex; justify-content: space-between; font-size: 11px; color: #65676B; }
-    .footer a { color: #1877F2; text-decoration: none; cursor: pointer; }
+    .footer a { color: #6366F1; text-decoration: none; cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">S</div>
-    <h1>Synapse Social</h1>
+    <h1>Synapse AI</h1>
     <div class="status"><span class="dot"></span> Active</div>
   </div>
 
@@ -48,7 +47,7 @@
     <div class="card">
       <div class="avatar" id="page-avatar">P</div>
       <div class="info">
-        <div class="name" id="page-name">Facebook Page</div>
+        <div class="name" id="page-name">Webpage</div>
         <div class="sub" id="page-status">Detecting page...</div>
       </div>
     </div>
@@ -70,7 +69,7 @@
   </div>
 
   <div class="footer">
-    <span id="notif-count">No notifications</span>
+    <span>Synapse AI</span>
     <a id="settings-link">Settings</a>
   </div>
 
@@ -85,48 +84,25 @@
 
     const pageActions = {
       page: [
-        { label: '📊 Analyze Page', action: 'analyze' },
-        { label: '✍️ Generate Post', action: 'create-post' },
-        { label: '📈 View Insights', action: 'insights' },
-        { label: '💬 Manage Comments', action: 'comments' },
-      ],
-      post: [
-        { label: '📊 Analyze Engagement', action: 'analyze-post' },
-        { label: '🤖 AI Reply Suggestions', action: 'suggest-reply' },
-        { label: '🚀 Boost Post', action: 'boost' },
-      ],
-      inbox: [
-        { label: '⚡ Smart Reply', action: 'smart-reply' },
-        { label: '🤖 Auto Respond', action: 'auto-respond' },
-        { label: '📝 Conversation Summary', action: 'summary' },
-      ],
-      insights: [
-        { label: '🧠 AI Analysis', action: 'ai-analysis' },
-        { label: '💡 Recommendations', action: 'recommendations' },
-        { label: '📄 Generate Report', action: 'report' },
-      ],
-      group: [
-        { label: '📊 Analyze Group', action: 'analyze-group' },
-        { label: '💡 Content Ideas', action: 'suggest-content' },
+        { label: '🔍 Extract Page Data', action: 'extract' },
+        { label: '✍️ Generate Content', action: 'generate' },
+        { label: '🛠️ Open Tools', action: 'tools' },
       ],
       unknown: [
-        { label: '🔍 Detect Page', action: 'detect' },
-        { label: '🔧 Use Synapse', action: 'open' },
+        { label: '🛠️ Use Synapse', action: 'open' },
       ],
     }
 
     const pageTypeLabels = {
-      page: 'Facebook Page', post: 'Post', inbox: 'Inbox',
-      insights: 'Insights', group: 'Group', unknown: 'Facebook',
+      page: 'Webpage', unknown: 'Unknown',
     }
 
     const pageTypeBadges = {
-      page: 'badge-page', post: 'badge-post', inbox: 'badge-inbox',
-      insights: 'badge-insights', unknown: 'badge-unknown',
+      page: 'badge-page', unknown: 'badge-unknown',
     }
 
     function updatePopup(pageType) {
-      const label = pageTypeLabels[pageType] || 'Facebook'
+      const label = pageTypeLabels[pageType] || 'Unknown'
       const badgeClass = pageTypeBadges[pageType] || 'badge-unknown'
 
       pageTypeDisplay.innerHTML = `<span class="badge ${badgeClass}">${label}</span>`
@@ -164,25 +140,24 @@
         return
       }
 
-      chrome.tabs.sendMessage(tabs[0].id, { type: 'GET_PAGE_TYPE' }, (response) => {
-        if (chrome.runtime.lastError || !response) {
-          pageStatus.textContent = 'Not on Facebook'
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'SYNAPSE_PING' }, (response) => {
+        if (chrome.runtime.lastError || !response?.active) {
+          pageStatus.textContent = 'No page detected'
           pageAvatar.textContent = '?'
           updatePopup('unknown')
           return
         }
 
-        const pt = response.pageType || 'unknown'
-        pageStatus.textContent = `${pageTypeLabels[pt] || 'Facebook'}`
-        pageAvatar.textContent = (pageTypeLabels[pt] || 'F')[0]
+        pageStatus.textContent = 'Active'
+        pageAvatar.textContent = 'S'
 
         chrome.tabs.sendMessage(tabs[0].id, { type: 'EXTRACT_PAGE_DATA' }, (dataResp) => {
-          if (dataResp?.success && dataResp.data?.pageName) {
-            pageName.textContent = dataResp.data.pageName
+          if (dataResp?.success && dataResp.data?.pageTitle) {
+            pageName.textContent = dataResp.data.pageTitle
           }
         })
 
-        updatePopup(pt)
+        updatePopup('page')
       })
     })
   </script>

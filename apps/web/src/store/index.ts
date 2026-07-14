@@ -1,6 +1,15 @@
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 export type PageId = "home" | "create" | "inbox" | "insights" | "ai" | "settings"
+
+export type Theme = "light" | "dark"
+
+export interface Brand {
+  name: string
+  niche: string
+  audience: string
+}
 
 export interface Post {
   id: string
@@ -53,14 +62,53 @@ interface AppState {
   setCurrentPage: (page: PageId) => void
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+
+  aiModel: string
+  apiKey: string
+  theme: Theme
+  notifications: boolean
+  autoReply: boolean
+  onboarded: boolean
+  brand: Brand
+
+  setAiModel: (aiModel: string) => void
+  setApiKey: (apiKey: string) => void
+  setTheme: (theme: Theme) => void
+  setNotifications: (notifications: boolean) => void
+  setAutoReply: (autoReply: boolean) => void
+  setOnboarded: (onboarded: boolean) => void
+  setBrand: (brand: Brand) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  currentPage: "home",
-  setCurrentPage: (page) => set({ currentPage: page }),
-  sidebarOpen: true,
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-}))
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      currentPage: "home",
+      setCurrentPage: (page) => set({ currentPage: page }),
+      sidebarOpen: true,
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+
+      aiModel: "meta/llama-3.1-8b-instruct",
+      apiKey: "",
+      theme: "dark",
+      notifications: true,
+      autoReply: false,
+      onboarded: false,
+      brand: { name: "", niche: "", audience: "" },
+
+      setAiModel: (aiModel) => set({ aiModel }),
+      setApiKey: (apiKey) => set({ apiKey }),
+      setTheme: (theme) => set({ theme }),
+      setNotifications: (notifications) => set({ notifications }),
+      setAutoReply: (autoReply) => set({ autoReply }),
+      setOnboarded: (onboarded) => set({ onboarded }),
+      setBrand: (brand) => set({ brand }),
+    }),
+    {
+      name: "synapse-social-store",
+    }
+  )
+)
 
 export const mockPosts: Post[] = [
   { id: "1", content: "Excited to announce our new product launch! 🚀 Stay tuned for more details coming soon.", status: "published", createdAt: "2026-06-17T10:00:00Z", engagement: 234 },

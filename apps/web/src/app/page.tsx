@@ -9,6 +9,7 @@ import { InsightsPage } from "@/views/Insights"
 import { AIPage } from "@/views/AI"
 import { SettingsPage } from "@/views/Settings"
 import { FloatingAssistant } from "@/components/floating-assistant"
+import { Onboarding } from "@/components/onboarding"
 import { useAppStore, type PageId } from "@/store"
 
 const pages: Record<PageId, React.ReactNode> = {
@@ -37,6 +38,7 @@ export default function App() {
         </main>
       </div>
       <FloatingAssistant />
+      <Onboarding />
     </SidebarProvider>
   )
 }

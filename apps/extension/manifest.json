@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Synapse Social",
-  "version": "1.0.0",
-  "description": "AI-powered Facebook Page management assistant",
+  "name": "Synapse AI",
+  "version": "1.1.0",
+  "description": "AI-powered browser automation assistant — control any page, extract data, fill forms, and automate tasks",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -13,19 +13,20 @@
     "storage",
     "sidePanel",
     "tabs",
-    "scripting"
+    "scripting",
+    "downloads"
   ],
   "host_permissions": [
-    "https://*.facebook.com/*",
-    "https://*.meta.com/*",
-    "https://integrate.api.nvidia.com/*"
+    "<all_urls>",
+    "https://integrate.api.nvidia.com/*",
+    "https://*.supabase.co/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://*.facebook.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
@@ -34,7 +35,7 @@
     "default_path": "sidepanel.html"
   },
   "action": {
-    "default_title": "Synapse Social",
+    "default_title": "Synapse AI",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -46,7 +47,7 @@
   "web_accessible_resources": [
     {
       "resources": ["sidepanel.html", "popup.html"],
-      "matches": ["https://*.facebook.com/*"]
+      "matches": ["<all_urls>"]
     }
   ]
 }
