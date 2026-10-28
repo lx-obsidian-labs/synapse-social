@@ -1640,6 +1640,26 @@ async function runAgentLoop(objective, initialUserMessage) {
       break
     }
 
+    // Guard against model decisions that repeat a completed action without
+    // any evidence of progress. In particular, typing the same query again
+    // does not submit a search or advance the objective.
+    const repeated = actionHistory.slice(-2)
+    if (repeated.length === 2 && repeated.every(x =>
+      x.success && x.type === action.type &&
+      String(x.target || '').toLowerCase() === String(action.target || '').toLowerCase() &&
+      String(x.value || '') === String(action.value || '')
+    )) {
+      if (action.type === 'type' && /search|query/i.test(String(action.target || ''))) {
+        action = { type: 'key', target: 'Enter', value: '' }
+        addMessage('system', '↪ Repeated search entry detected — submitting instead of typing again.')
+      } else if (['extract', 'observe', 'wait', 'scroll', 'type'].includes(action.type)) {
+        agentContext.lastError = 'No progress: repeated ' + action.type + ' without a new outcome.'
+        addMessage('system', '⛔ Stopped an unproductive action loop: ' + action.type + '.')
+        transition(AgentState.FAILED)
+        break
+      }
+    }
+
     // --- State-transition check: break the redundant "New chat" loop ---
     // If the planner still wants to start a fresh chat while one is already
     // open (validated programmatically), override it: send the user's prompt
