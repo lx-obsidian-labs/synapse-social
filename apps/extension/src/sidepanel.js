@@ -149,6 +149,7 @@ let actionHistory = []
 const searchReplanAttempts = new Map()
 let lastResearchSearchUrl = ''
 let repeatedResearchSearches = 0
+const researchAttemptedUrls = new Set()
 let failedActions = new Map()      // "type:target" → count of failures
 let consecutiveFailures = 0         // resets on success
 let lastStableUrl = ''             // last known-good page URL, used for rollback
@@ -1592,6 +1593,7 @@ async function runAgentLoop(objective, initialUserMessage) {
   searchReplanAttempts.clear()
   lastResearchSearchUrl = ''
   repeatedResearchSearches = 0
+  researchAttemptedUrls.clear()
   agentContext.lastError = null
   agentContext.completedTasks = []
   agentContext.chatTurns = 0
@@ -1766,6 +1768,58 @@ async function runAgentLoop(objective, initialUserMessage) {
       }
     }
     if (isResearchMission(agentContext.objective) && ['read', 'extract', 'click'].includes(action?.type)) repeatedResearchSearches = 0
+
+    // A research mission must not reopen the same search result, or click
+    // unrelated in-page navigation (e.g. "Open the Editor") indefinitely.
+    // Prefer fresh external links from the observed results page.
+    if (isResearchMission(agentContext.objective)) {
+      const resultsQuery = globalThis.SynapseBrowserFlow?.searchQuery(pageState.url)
+      if (resultsQuery !== null && !pageState.loading) {
+        const candidates = (Array.isArray(pageState.links) ? pageState.links : []).map(link => {
+          try {
+            const href = new URL(link.href || link.url || '', pageState.url)
+            const label = String(link.text || link.title || link.label || '').trim()
+            if (!/^https?:$/.test(href.protocol)) return null
+            if (globalThis.SynapseBrowserFlow?.providerOf(href.href)) return null
+            if (!label || /^(images|videos|shopping|maps|news|more|next|previous)$/i.test(label)) return null
+            return { href: href.href, label }
+          } catch { return null }
+        }).filter(Boolean)
+        const available = candidates.find(item => !researchAttemptedUrls.has(item.href))
+        const repeatedClick = action?.type === 'click' && actionHistory.some(prev =>
+          prev.type === 'click' && prev.success && prev.target === action.target)
+        const staleAction = ['search','parse'].includes(action?.type) ||
+          (action?.type === 'type' && /search/i.test(action.target || '')) ||
+          (action?.type === 'navigate' && globalThis.SynapseBrowserFlow?.providerOf(action.target)) ||
+          repeatedClick
+        if (staleAction && available) {
+          action = { type:'navigate', target:available.href, value:'' }
+          addMessage('system', '🔎 Opening a new research source instead of repeating search actions.')
+        }
+      }
+      if (action?.type === 'navigate' && /^https?:\/\//i.test(action.target || '') &&
+          !globalThis.SynapseBrowserFlow?.providerOf(action.target)) {
+        const url = new URL(action.target).href
+        if (researchAttemptedUrls.has(url)) {
+          const replacement = globalThis.SynapseBrowserFlow?.searchQuery(pageState.url) !== null
+            ? (pageState.links || []).map(x => { try { return new URL(x.href || x.url,pageState.url).href } catch { return null } })
+              .find(x => x && !researchAttemptedUrls.has(x) && !globalThis.SynapseBrowserFlow?.providerOf(x))
+            : null
+          if (replacement) action = {type:'navigate', target:replacement, value:''}
+          else {
+            addMessage('system', '⛔ Research source already attempted; cannot safely repeat it without new evidence.')
+            transition(AgentState.FAILED)
+            break
+          }
+        }
+        researchAttemptedUrls.add(action.target)
+      }
+      if (action?.type === 'click' && actionHistory.filter(x=>x.success && x.type==='click' && x.target===action.target).length >= 2) {
+        addMessage('system', '⛔ Repeated page interaction without new research evidence: ' + action.target)
+        transition(AgentState.FAILED)
+        break
+      }
+    }
 
     // Ads and a slow player can be waited through, but never for the entire
     // sixty-step mission budget without an actionable explanation.
