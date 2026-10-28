@@ -1804,6 +1804,34 @@ html,body{width:100%;height:100%;overflow:hidden!important}
     </div>
   </div>
 
+<style>
+/* Synapse compact icon-led UI */
+.syn-icon{display:inline-block;vertical-align:middle;flex:none;stroke:currentColor}
+.syn-nav .tabs .tab{display:flex;align-items:center;gap:9px;min-height:38px;padding:8px 11px;white-space:nowrap}
+.syn-nav .tabs .tab .syn-icon{width:18px;height:18px;opacity:.9}
+.syn-nav .tabs .tab .syn-tab-label{font-size:12px;font-weight:600}
+.syn-right-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.syn-shortcut-icon,.syn-card-icon{display:inline-flex;align-items:center;justify-content:center}
+.syn-shortcut-icon .syn-icon{width:19px;height:19px}
+.syn-card-icon .syn-icon{width:22px;height:22px}
+.syn-shortcut{min-height:38px;gap:9px}
+.syn-card{min-height:88px}
+.syn-activity #hud-log{max-height:190px;overflow:auto}
+.syn-nav-footer{font-size:10px;opacity:.65}
+@media(max-width:1100px){
+ .syn-nav .tabs .tab{justify-content:center;padding:9px 5px}
+ .syn-nav .tabs .tab .syn-tab-label{display:none}
+ .syn-nav .tabs .tab .syn-icon{width:19px;height:19px}
+ .syn-nav .tabs .tab{position:relative}
+ .syn-nav .tabs .tab:focus-visible{outline:2px solid #22c8f5;outline-offset:-2px}
+ .syn-nav-footer{font-size:0}
+}
+@media(max-width:700px){
+ .syn-right-tabs button{gap:4px}
+ .syn-right-tabs button .syn-icon{width:15px;height:15px}
+ .syn-shortcut{min-height:36px}
+}
+</style>
   <script src="sidepanel.js"></script>
   <script src="shell.js"></script>
 </body>
