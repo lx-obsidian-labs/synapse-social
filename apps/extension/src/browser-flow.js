@@ -64,7 +64,55 @@
     const required = requestedThree ? 3 : 1;
     return { ready: domains.size >= required, sourceCount: domains.size, required };
   }
-  const api = Object.freeze({ providerOf, searchQuery, planSearchAction, confirmsSearch, researchReadiness });
+  // YouTube playback is an observable browser state, not an LLM-generated
+  // cycle of "search -> click -> search". Treat a watch page as a terminal
+  // destination that must be verified before reporting completion.
+  function isPlaybackGoal(objective) {
+    return /\byoutube\b/i.test(String(objective || '')) &&
+      /\b(play|playback|watch|listen)\b/i.test(String(objective || ''));
+  }
+  function isYouTubeWatch(urlString) {
+    try {
+      const url = new URL(urlString);
+      return providerOf(urlString) === 'youtube' &&
+        url.pathname === '/watch' && !!url.searchParams.get('v');
+    } catch { return false; }
+  }
+  function normalizedLabel(text) {
+    return String(text || '').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '').replace(/[’']/g, '')
+      .toLowerCase().trim();
+  }
+  function videoActionForObjective(objective, pageState) {
+    if (!isPlaybackGoal(objective) || providerOf(pageState?.url) !== 'youtube') return null;
+    if (isYouTubeWatch(pageState.url)) {
+      if (pageState?.mediaPlayback?.playing) return { type: 'done', target: '', value: '' };
+      return { type: 'media', target: 'play', value: '' };
+    }
+    try {
+      const url = new URL(pageState.url);
+      if (url.pathname !== '/results') return null;
+    } catch { return null; }
+    const candidates = (Array.isArray(pageState.links) ? pageState.links : [])
+      .map(link => {
+        try {
+          const dest = new URL(link.href || link.url, pageState.url);
+          if (!isYouTubeWatch(dest.href)) return null;
+          return { url: dest.href, text: String(link.text || link.title || link.label || '') };
+        } catch { return null; }
+      }).filter(Boolean);
+    if (!candidates.length) return null;
+    const m = String(objective).match(/\b(?:search\s+for|music\s+by|songs?\s+by)\s+([^\s’']+)/i);
+    const artist = normalizedLabel(m?.[1] || '');
+    const choice = (artist && candidates.find(video => normalizedLabel(video.text).includes(artist))) || candidates[0];
+    return { type: 'navigate', target: choice.url, value: '' };
+  }
+  function hasAdvancedPlayback(before, after) {
+    return !!before?.playing && !!after?.playing &&
+      Number.isFinite(before.currentTime) && Number.isFinite(after.currentTime) &&
+      after.currentTime > before.currentTime + 0.2;
+  }
+  const api = Object.freeze({ providerOf, searchQuery, planSearchAction, confirmsSearch, researchReadiness, isPlaybackGoal, isYouTubeWatch, videoActionForObjective, hasAdvancedPlayback });
   root.SynapseBrowserFlow = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
