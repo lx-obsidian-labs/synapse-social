@@ -620,7 +620,7 @@ const tools: Record<string, ToolFn> = {
     // YouTube's search input is input#search (type=text), often inside
     // ytd-searchbox. Target it before generic inputs and avoid ambiguous
     // "Search" label matching against buttons or hidden fields.
-    const youtubeSelectors = /(^|\\.)youtube\\.com$/.test(location.hostname)
+    const youtubeSelectors = /(^|\.)youtube\.com$/.test(location.hostname)
       ? ['ytd-searchbox input#search', 'input#search[placeholder="Search"]', 'input#search', 'input[placeholder="Search"]']
       : []
     const candidates = [...youtubeSelectors, ...chatGptSelectors, ...genericFallbacks]
@@ -964,7 +964,7 @@ const tools: Record<string, ToolFn> = {
         mediaPlayback: (() => {
           const video = document.querySelector<HTMLVideoElement>('video')
           if (!video) return null
-          return { playing: !video.paused && !video.ended && video.readyState >= 2, currentTime: Math.round(video.currentTime * 10) / 10, readyState: video.readyState, ended: video.ended }
+          return { playing: !video.paused && !video.ended && video.readyState >= 2, adPlaying: !!document.querySelector('.html5-video-player.ad-showing'), currentTime: Math.round(video.currentTime * 10) / 10, readyState: video.readyState, ended: video.ended }
         })(),
         imgCount,
       }),
