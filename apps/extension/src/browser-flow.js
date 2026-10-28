@@ -86,7 +86,11 @@
   function videoActionForObjective(objective, pageState) {
     if (!isPlaybackGoal(objective) || providerOf(pageState?.url) !== 'youtube') return null;
     if (isYouTubeWatch(pageState.url)) {
-      if (pageState?.mediaPlayback?.playing) return { type: 'done', target: '', value: '' };
+      // Wait for the real player and any preroll ad before judging playback.
+      // An ad's advancing media clock is not evidence the requested song plays.
+      if (!pageState.mediaPlayback || pageState.mediaPlayback.adPlaying)
+        return { type: 'wait', target: '', value: '1500' };
+      if (pageState.mediaPlayback.playing) return { type: 'done', target: '', value: '' };
       return { type: 'media', target: 'play', value: '' };
     }
     try {
