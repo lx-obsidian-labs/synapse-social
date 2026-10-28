@@ -534,7 +534,13 @@ const tools: Record<string, ToolFn> = {
           '[role="textbox"]',
           '[contenteditable="true"]',
         ]
-    const candidates = [...chatGptSelectors, ...genericFallbacks]
+    // YouTube's search input is input#search (type=text), often inside
+    // ytd-searchbox. Target it before generic inputs and avoid ambiguous
+    // "Search" label matching against buttons or hidden fields.
+    const youtubeSelectors = /(^|\\.)youtube\\.com$/.test(location.hostname)
+      ? ['ytd-searchbox input#search', 'input#search[placeholder="Search"]', 'input#search', 'input[placeholder="Search"]']
+      : []
+    const candidates = [...youtubeSelectors, ...chatGptSelectors, ...genericFallbacks]
 
     // 2. Wait for the input to be fully visible & attached to the DOM
     const found = await waitForVisibleInput(candidates, 12000)
@@ -560,7 +566,10 @@ const tools: Record<string, ToolFn> = {
     // form fires before every field is filled. There the agent fills each
     // field then clicks the submit/"Log in" button (or sends key:enter).
     const isComposer = el.getAttribute('contenteditable') === 'true' || el.getAttribute('role') === 'textbox'
-    const isSearch = el.getAttribute('role') === 'searchbox' || (el.tagName === 'INPUT' && (el as HTMLInputElement).type === 'search')
+    const isSearch = el.getAttribute('role') === 'searchbox' ||
+      (el.tagName === 'INPUT' && ((el as HTMLInputElement).type === 'search' ||
+        /^(search|search_query)$/i.test(el.id || '') ||
+        /search/i.test(el.getAttribute('placeholder') || '')))
     const chatUrl = /(chatgpt|openai\.com|claude\.ai|gemini|bard|copilot|bing\.com\/chat)/i.test(location.href)
     const autoSubmit = isComposer || isSearch || chatUrl
     if (autoSubmit) {
