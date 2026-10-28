@@ -147,6 +147,8 @@ const TOOL_TIMEOUT = 20000
 const ACTION_HISTORY_SIZE = 8
 let actionHistory = []
 const searchReplanAttempts = new Map()
+let lastResearchSearchUrl = ''
+let repeatedResearchSearches = 0
 let failedActions = new Map()      // "type:target" → count of failures
 let consecutiveFailures = 0         // resets on success
 let lastStableUrl = ''             // last known-good page URL, used for rollback
@@ -385,11 +387,11 @@ async function autoRecover(tool, error, historyMessages, rawContent) {
 
 function parseAction(text) {
   // Try JSON format: {"type":"click","target":"..."}
-  const jsonMatch = text.match(/\{[\s\S]*?"type"\s*:\s*"(click|type|navigate|scroll|wait|extract|observe|done|search|back|forward|key|select|check|upload|save|copy|find|reload|print|zoom|dismiss|iframe|data|parse|read|summarize|translate|contacts|tabs|export|clean|design|create_account|download_image|gmail)"[\s\S]*?\}/)
+  const jsonMatch = text.match(/\{[\s\S]*?"type"\s*:\s*"(click|type|navigate|scroll|wait|extract|observe|done|search|back|forward|key|select|check|upload|save|copy|find|reload|print|zoom|dismiss|iframe|data|parse|read|summarize|translate|contacts|tabs|export|clean|design|create_account|download_image|gmail|accept)"[\s\S]*?\}/)
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0])
-      if (parsed.type) return { type: parsed.type, target: parsed.target || '', value: parsed.value || '' }
+      if (parsed.type) return { type: parsed.type === 'accept' ? 'click' : parsed.type, target: parsed.target || (parsed.type === 'accept' ? 'Accept' : ''), value: parsed.value || '' }
     } catch {}
   }
   // Try simple format: ACTION: type | target | value
@@ -1578,6 +1580,8 @@ async function runAgentLoop(objective, initialUserMessage) {
   failedActions.clear()
   consecutiveFailures = 0
   searchReplanAttempts.clear()
+  lastResearchSearchUrl = ''
+  repeatedResearchSearches = 0
   agentContext.lastError = null
   agentContext.completedTasks = []
   agentContext.chatTurns = 0
@@ -1710,6 +1714,7 @@ async function runAgentLoop(objective, initialUserMessage) {
       }
     }
 
+    if (isResearchMission(agentContext.objective) && globalThis.SynapseBrowserFlow?.searchQuery(pageState.url) !== null) lastResearchSearchUrl = pageState.url
     agentContext.url = pageState.url || agentContext.url
     agentContext.title = pageState.title || agentContext.title
     rememberResearchEvidence(pageState)
@@ -1732,6 +1737,25 @@ async function runAgentLoop(objective, initialUserMessage) {
     setHudAction('⟢ COMPUTING NEXT ACTION…')
     await sleep(PLAN_DELAY_MS)
     let action = await planNextAction(pageState, agentContext)
+
+    // Restore an existing search result page rather than repeating discovery.
+    if (isResearchMission(agentContext.objective) && action?.type === 'search') {
+      const alreadyOnResults = globalThis.SynapseBrowserFlow?.searchQuery(pageState.url) !== null
+      const searchedBefore = actionHistory.some(x => x.success && x.type === 'search')
+      if (alreadyOnResults || (searchedBefore && lastResearchSearchUrl)) {
+        repeatedResearchSearches++
+        if (repeatedResearchSearches > 2) {
+          addMessage('system', '⛔ Research stalled: repeated searches without source progress.')
+          transition(AgentState.FAILED)
+          break
+        }
+        action = alreadyOnResults
+          ? { type: 'parse', target: '', value: '' }
+          : { type: 'navigate', target: lastResearchSearchUrl, value: '' }
+        addMessage('system', '↩️ Reusing previous search results rather than searching again.')
+      }
+    }
+    if (isResearchMission(agentContext.objective) && ['read', 'extract', 'click'].includes(action?.type)) repeatedResearchSearches = 0
 
     // Ads and a slow player can be waited through, but never for the entire
     // sixty-step mission budget without an actionable explanation.
@@ -1792,7 +1816,7 @@ async function runAgentLoop(objective, initialUserMessage) {
       String(x.target || '').toLowerCase() === String(action.target || '').toLowerCase() &&
       String(x.value || '') === String(action.value || '')
     )) {
-      if (['extract', 'observe', 'wait', 'scroll', 'type'].includes(action.type)) {
+      if (['extract', 'observe', 'wait', 'scroll', 'type', 'search', 'parse'].includes(action.type)) {
         agentContext.lastError = 'No progress: repeated ' + action.type + ' without a new outcome.'
         addMessage('system', '⛔ Stopped an unproductive action loop: ' + action.type + '.')
         transition(AgentState.FAILED)
@@ -2047,7 +2071,7 @@ async function runAgentLoop(objective, initialUserMessage) {
     const msg = (loopErr && loopErr.message) ? loopErr.message : String(loopErr)
     console.error('[runAgentLoop] step error:', loopErr)
     agentContext.lastError = msg
-    if (/AI planning unavailable|AI service not configured|add your NVIDIA API key|\b401\b|\b403\b|no valid browser action/i.test(msg)) {
+    if (/AI planning unavailable|AI service not configured|add your NVIDIA API key|\b401\b|\b403\b/i.test(msg)) {
       addMessage('system', '🛑 Agent paused: ' + msg + '\\nOpen Settings, configure a working NVIDIA API key/model, then restart the task.')
       scrollToBottom()
       transition(AgentState.FAILED)
