@@ -33,7 +33,8 @@ export async function removeConnection(id: string) {
   await chrome.storage.local.set({[STORE]:(await allConnections()).filter(c=>c.id!==id)});
   return {success:true};
 }
-async function request(id: string, method: string, params: any = {}) {
+const sessions = new Map<string,string>();
+async function request(id: string, method: string, params: any = {}, isInit = false): Promise<any> {
   const c = (await allConnections()).find(c=>c.id===id);
   if (!c) throw new Error('Unknown MCP server');
   const controller = new AbortController();
@@ -41,8 +42,11 @@ async function request(id: string, method: string, params: any = {}) {
   try {
     const headers: Record<string,string> = {'Content-Type':'application/json','Accept':'application/json, text/event-stream','MCP-Protocol-Version':'2025-03-26'};
     if (c.token) headers.Authorization = 'Bearer ' + c.token;
+    if (sessions.has(id)) headers['Mcp-Session-Id'] = sessions.get(id)!;
     const response = await fetch(c.url,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id:crypto.randomUUID(),method,params}),signal:controller.signal,redirect:'error'});
     if (!response.ok) throw new Error('MCP HTTP ' + response.status);
+    const sid = response.headers.get('Mcp-Session-Id');
+    if (sid) sessions.set(id,sid);
     const raw = await response.text();
     if (raw.length > 1024*1024) throw new Error('MCP response too large');
     let result: any;
@@ -54,9 +58,15 @@ async function request(id: string, method: string, params: any = {}) {
     return result.result;
   } finally {clearTimeout(timer)}
 }
-export async function listTools(id: string) {return request(id,'tools/list',{});}
+async function ensureInitialized(id: string) {
+  if (sessions.has(id)) return;
+  await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:'1.2.0'}},true);
+  // Stateless MCP servers do not issue session IDs. Initialize on each operation.
+}
+export async function listTools(id: string) {await ensureInitialized(id);return request(id,'tools/list',{});}
 export async function callTool(id: string, name: string, args: any) {
   if (!/^[\\w.\\/-]{1,150}$/.test(name)) throw new Error('Invalid tool name');
   if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Tool arguments must be an object');
+  await ensureInitialized(id);
   return request(id,'tools/call',{name,arguments:args});
 }
