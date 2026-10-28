@@ -558,16 +558,27 @@ function normalizeUrl(raw: string): string {
   return u
 }
 
-function waitForTabLoad(tabId: number, timeoutMs = 20000): Promise<void> {
-  return new Promise((resolve) => {
-    const onUpdated = (id: number, info: any) => {
-      if (id === tabId && info.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(onUpdated)
-        resolve()
-      }
+function waitForTabLoad(tabId: number, timeoutMs = 8000): Promise<void> {
+  // A fast SPA navigation may finish before the onUpdated listener is added.
+  // Observe both the current tab status and future events, with a bounded wait.
+  return new Promise(resolve => {
+    let complete = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const finish = () => {
+      if (complete) return
+      complete = true
+      chrome.tabs.onUpdated.removeListener(onUpdated)
+      if (timer !== undefined) clearTimeout(timer)
+      resolve()
+    }
+    const onUpdated = (id: number, info: chrome.tabs.TabChangeInfo) => {
+      if (id === tabId && info.status === 'complete') finish()
     }
     chrome.tabs.onUpdated.addListener(onUpdated)
-    setTimeout(() => { chrome.tabs.onUpdated.removeListener(onUpdated); resolve() }, timeoutMs)
+    timer = setTimeout(finish, timeoutMs)
+    chrome.tabs.get(tabId).then(tab => {
+      if (tab.status === 'complete') finish()
+    }).catch(finish)
   })
 }
 
@@ -583,8 +594,9 @@ const BROWSER_TOOLS: Record<string, (args: string[]) => Promise<{ success: boole
 
       await chrome.tabs.update(tabs[0].id, { url })
       await waitForTabLoad(tabs[0].id)
-
-      return { success: true, result: `Navigated to ${url}` }
+      const arrived = await chrome.tabs.get(tabs[0].id)
+      if (!arrived.url && !arrived.pendingUrl) return { success: false, error: 'Navigation did not expose a destination URL' }
+      return { success: true, result: `Navigation requested: ${url}; browser at ${arrived.url || arrived.pendingUrl}` }
     } catch { return { success: false, error: `Failed to navigate to ${url}` } }
   },
 
