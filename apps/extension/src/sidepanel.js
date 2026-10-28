@@ -879,6 +879,16 @@ function researchEvidenceText() {
     .map((x,i) => (i + 1) + '. ' + x.title + ' (' + x.url + '): ' + x.excerpt)
     .join('\n')
 }
+async function createResearchDocument(objective, content) {
+  // Store finished evidence-based reports locally; no remote document service or API key.
+  const title = String(objective || 'Research report').replace(/\s+/g, ' ').trim().slice(0, 120);
+  const id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+  const document = { title, content: String(content || ''), createdAt: new Date().toISOString() };
+  await chrome.storage.local.set({ ['synapse_document_' + id]: document });
+  await chrome.tabs.create({ url: chrome.runtime.getURL('document.html?id=' + encodeURIComponent(id)), active: true });
+  return id;
+}
+
 async function synthesizeResearchAnswer(objective) {
   const evidence = researchEvidenceText()
   if (!evidence) return null
@@ -1945,6 +1955,12 @@ async function runAgentLoop(objective, initialUserMessage) {
           }
           addMessage('assistant', answer)
           scrollToBottom()
+          try {
+            await createResearchDocument(agentContext.objective, answer)
+            addMessage('system', '📄 Report ready — opened a browser preview with HTML, TXT, and Print / Save PDF options.')
+          } catch (documentError) {
+            addMessage('system', '⚠️ Research completed, but document preview could not open: ' + String(documentError?.message || documentError))
+          }
         }
         transition(AgentState.DONE)
         break
