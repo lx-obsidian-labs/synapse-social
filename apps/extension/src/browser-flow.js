@@ -108,7 +108,14 @@
     if (!candidates.length) return null;
     const m = String(objective).match(/\b(?:search\s+for|music\s+by|songs?\s+by)\s+([^\s’']+)/i);
     const artist = normalizedLabel(m?.[1] || '');
-    const choice = (artist && candidates.find(video => normalizedLabel(video.text).includes(artist))) || candidates[0];
+    // Never substitute an unrelated video when the user requested a specific artist.
+    // A missing result is better than falsely reporting the wrong song as complete.
+    const relevant = artist
+      ? candidates.filter(video => normalizedLabel(video.text).includes(artist))
+      : candidates;
+    if (!relevant.length) return null;
+    // Prefer the requested artist's official music videos over clips or reactions.
+    const choice = relevant.find(video => /\bofficial\s+(?:music\s+)?video\b/i.test(video.text)) || relevant[0];
     return { type: 'navigate', target: choice.url, value: '' };
   }
   function hasAdvancedPlayback(before, after) {
