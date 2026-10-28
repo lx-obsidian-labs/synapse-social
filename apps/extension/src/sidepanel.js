@@ -578,7 +578,7 @@ const PLATFORM_GUIDE = `### Cloudflare (dash.cloudflare.com)
 - Vercel: dashboard.vercel.com — Projects list, then a project -> Deployments, Settings, Domains. Netlify: app.netlify.com — Sites -> site -> Domain settings / Build & deploy.
 
 ### General web
-- Search engines: use "search" (google/bing/duckduckgo/wikipedia). After results, "parse" extracts structured links.
+- For research, use "search" to retrieve structured source titles, URLs, and summaries without leaving the current page. Use "navigate" or "read" to verify primary sources. Never invent citations.
 - Articles/docs: "read" gets clean content; "summarize" gives 3-5 bullets.
 - Shops/forms: click exact button text; fill fields; submit via the button.
 
@@ -1057,7 +1057,7 @@ async function executeAction(action) {
       // Default to the CURRENT year (2026) for up-to-date results, unless the
       // query already pins a specific 4-digit year (e.g. the user asked for 2024).
       if (!/\b(?:19|20)\d{2}\b/.test(q)) q = q + ' 2026'
-      return sendToBackground('BROWSER_TOOL', { tool: 'search_web', args: [q] }, TOOL_TIMEOUT)
+      return sendToBackground('BROWSER_TOOL', { tool: 'search_results', args: [q] }, TOOL_TIMEOUT)
     }
     case 'parse':
       return sendToBackground('TOOL_EXECUTE', { tool: 'parse_search_results', args: [] }, TOOL_TIMEOUT)
