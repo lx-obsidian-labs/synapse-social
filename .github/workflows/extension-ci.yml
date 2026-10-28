@@ -48,10 +48,27 @@ jobs:
           path: apps/extension/synapse-ai-v1.2.0-test.zip
           retention-days: 7
 
+      - name: Package experimental MCP companion
+        working-directory: .
+        run: |
+          set -euo pipefail
+          test -s apps/mcp-companion/index.mjs
+          test -s apps/mcp-companion/package.json
+          node --check apps/mcp-companion/index.mjs
+          cd apps/mcp-companion
+          zip -j ../../synapse-mcp-companion-test.zip package.json index.mjs
+          cd ../..
+          unzip -t synapse-mcp-companion-test.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synapse-mcp-companion-test
+          path: synapse-mcp-companion-test.zip
+          retention-days: 7
+
       - name: Publish test prerelease
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view v1.2.0-test --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create v1.2.0-test --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Synapse AI 1.2.0 — Test build" --notes "Early testing build. Install manually and send usage logs. MCP and AI integration are experimental." --prerelease
-          gh release upload v1.2.0-test synapse-ai-v1.2.0-test.zip --repo "$GITHUB_REPOSITORY" --clobber
+          gh release upload v1.2.0-test synapse-ai-v1.2.0-test.zip ../../synapse-mcp-companion-test.zip --repo "$GITHUB_REPOSITORY" --clobber
