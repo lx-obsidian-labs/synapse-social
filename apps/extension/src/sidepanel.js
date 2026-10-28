@@ -1782,7 +1782,12 @@ async function runAgentLoop(objective, initialUserMessage) {
     // any evidence of progress. In particular, typing the same query again
     // does not submit a search or advance the objective.
     const repeated = actionHistory.slice(-2)
-    if (repeated.length === 2 && repeated.every(x =>
+    // Waiting for a real video element or an advertisement is deliberate,
+    // bounded progress (videoWaitSteps caps it), not a search/extract loop.
+    const intentionalVideoWait = action.type === 'wait' &&
+      globalThis.SynapseBrowserFlow?.isPlaybackGoal(agentContext.objective) &&
+      globalThis.SynapseBrowserFlow.isYouTubeWatch(pageState.url)
+    if (!intentionalVideoWait && repeated.length === 2 && repeated.every(x =>
       x.success && x.type === action.type &&
       String(x.target || '').toLowerCase() === String(action.target || '').toLowerCase() &&
       String(x.value || '') === String(action.value || '')
@@ -1888,28 +1893,6 @@ async function runAgentLoop(objective, initialUserMessage) {
       consecutivePassive = 0
     }
 
-    // Extraction-only loops are not progress for interaction objectives.
-    // For YouTube playback, navigate to a real video result rather than
-    // repeatedly reading the same search results.
-    if (/youtube\\.com/i.test(pageState.url || '') &&
-        /\\b(play|listen|watch)\\b/i.test(agentContext.objective || '') &&
-        /^(extract|summarize|observe|wait)$/.test(action.type)) {
-      const recent = actionHistory.slice(-3)
-      if (recent.length >= 2 && recent.every(x => /^(extract|summarize|observe|wait)$/.test(x.type))) {
-        const links = Array.isArray(pageState.links) ? pageState.links : []
-        const video = links.find(x => /\/watch\?v=/.test(String(x.href || x.url || '')) &&
-          /giveon|givēon/i.test(String(x.text || x.title || x.label || '')))
-        if (video) {
-          action = { type: 'click', target: String(video.text || video.title || video.label || video.href || video.url), value: '' }
-          addMessage('system', '▶ Search results are ready — selecting a Giveon video instead of extracting again.')
-        } else {
-          agentContext.lastError = 'No suitable YouTube video identified after repeated extraction; playback not verified.'
-          addMessage('system', '⚠️ No playable result identified. Stopping repetitive extraction.')
-          transition(AgentState.FAILED)
-          break
-        }
-      }
-    }
 
     if (action.type === 'done') {
       const videoGoal = globalThis.SynapseBrowserFlow?.isPlaybackGoal(agentContext.objective) &&
