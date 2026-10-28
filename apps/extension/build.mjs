@@ -37,6 +37,7 @@ async function build() {
     entryPoints: [
       resolve(__dirname, 'src/background.ts'),
       resolve(__dirname, 'src/content.ts'),
+      resolve(__dirname, 'src/document-export.js'),
     ],
     bundle: true,
     outdir: resolve(__dirname, 'dist'),
