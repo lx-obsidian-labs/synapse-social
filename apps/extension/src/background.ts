@@ -104,7 +104,7 @@ function markModelFailed(name: string, status: number) {
   } else if (status === 401) {
     // Auth problem — surface once; don't permanently skip (key may be fixed live).
     console.log(`[Auth] ${name} returned 401 — check NVIDIA_API_KEY`)
-  } else if (status === 404 || status === 403 || status === 400) {
+  } else if (status === 404 || status === 403 || status === 400 || status === 410) {
     modelHardFail.add(name)
     console.log(`[Speed] ${name} permanently skipped (${status})`)
   }
@@ -160,7 +160,7 @@ async function routeModelCall(
         usedModel = model.name
       } else {
         err = res.error || `${model.name}: empty/invalid response`
-        if (!isModelAvailable(model.name)) break // rate-limited/timeout → skip this one
+        if (!isModelAvailable(model.name)) break // hard-failed or rate-limited → try next model
       }
     }
     if (ok) return { success: true, content, model: usedModel }
@@ -194,9 +194,8 @@ interface SynapseModel {
 
 const MODELS: SynapseModel[] = [
   // --- Primary tier: small/mid models reliably available on the NVIDIA NIM
-  // free/public tier. Tried first so the agent works even when the huge MoE
-  // models are unentitled or down. 8B is confirmed working (used by the web app).
-  { name: 'meta/llama-3.1-8b-instruct',            maxTokens: 8192, temperature: 0.7, topP: 0.95 },
+  // free/public tier. Try currently provisioned models first; individual
+  // availability depends on the account and NVIDIA model lifecycle.
   { name: 'meta/llama-3.3-70b-instruct',          maxTokens: 8192, temperature: 0.7, topP: 0.95 },
   // Vision-capable NIM models (used by the vision path). Smaller + more likely
   // entitled than the giant MoE vision models.
