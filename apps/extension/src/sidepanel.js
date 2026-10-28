@@ -854,8 +854,8 @@ function rememberResearchEvidence(state, toolResult = '') {
   try { address = new URL(state?.url || '') } catch { return }
   if (!['http:', 'https:'].includes(address.protocol)) return
   if (/^(accounts|mail)\.google\.com$/.test(address.hostname)) return
-  if (/^(www\.)?(google\.[a-z.]+|bing\.com|duckduckgo\.com)$/.test(address.hostname) &&
-      /^(\/search|\/results)$/.test(address.pathname)) return
+  // Search engines are discovery, not evidence about the products being compared.
+  if (/^(www\.)?(google\.[a-z.]+|bing\.com|duckduckgo\.com)$/.test(address.hostname)) return
   if (/(^|\.)youtube\.com$/.test(address.hostname) && address.pathname === '/results') return
   const excerpt = String(toolResult || state.textSummary || '').replace(/\s+/g, ' ').trim().slice(0, 1550)
   if (excerpt.length < 65) return
@@ -1295,6 +1295,16 @@ function verifyAction(action, result, pageState) {
 // declaring done — mirrors how browser benchmarks evaluate task success.
 
 async function verifyObjective(pageState, context) {
+  if (isResearchMission(context.objective)) {
+    const notes = context.researchEvidence || []
+    const requestedThree = /\b(three|3)\b/i.test(context.objective || '')
+    const domains = new Set(notes.map(n => {try {return new URL(n.url).hostname} catch {return ''}}).filter(Boolean))
+    if (requestedThree && domains.size < 3) {
+      return { complete: false, confidence: 1, reason: 'Only ' + domains.size + ' distinct source websites visited; three requested.' }
+    }
+    if (!notes.length) return { complete: false, confidence: 1, reason: 'No source pages have been read yet.' }
+  }
+
   // Video autoplay may be blocked. Checking the watch URL alone would be a
   // false success; require observed media to be playing and advancing.
   if (/youtube\.com/i.test(pageState.url || '') &&
@@ -1313,6 +1323,7 @@ async function verifyObjective(pageState, context) {
   const prompt = `You are a strict evaluator. Decide if the user's objective is COMPLETE from the current page state.
 Objective: ${context.objective}
 Completed so far: ${context.completedTasks.join(', ') || 'none'}
+Evidence from visited source pages:\n${researchEvidenceText().slice(0, 6000)}
 Last error: ${context.lastError || 'none'}
 
 Current page:
@@ -2064,7 +2075,9 @@ async function runAgentLoop(objective, initialUserMessage) {
   }
 
   if (agentContext.steps >= agentContext.maxSteps) {
-    transition(AgentState.DONE)
+    addMessage('system', '⛔ Step budget exhausted before the objective could be verified. This is not a completed task.')
+    transition(AgentState.IDLE)
+    return 'failed'
   }
 
   if (agentStopRequested || agentContext.lastError) {
