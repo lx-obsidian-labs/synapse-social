@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/extension/**'
       - '.github/workflows/extension-ci.yml'
+  workflow_dispatch:
   pull_request:
     paths:
       - 'apps/extension/**'
@@ -20,12 +21,14 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
-      - run: npm run build
+      - run: npm run zip
       - name: Validate package
         run: |
           node -e "const fs=require('fs');const p='dist/manifest.json';const m=JSON.parse(fs.readFileSync(p));for(const x of ['background.js','content.js','sidepanel.js','popup.js','sidepanel.html','popup.html'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!=='1.2.0')throw Error('Version mismatch')"
+      - name: Verify ZIP
+        run: unzip -t synapse-ai-v1.2.0-test.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: synapse-extension-unpacked
-          path: apps/extension/dist/
+          name: synapse-ai-v1.2.0-test
+          path: apps/extension/synapse-ai-v1.2.0-test.zip
           retention-days: 7
