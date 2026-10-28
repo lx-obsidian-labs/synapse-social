@@ -27,14 +27,19 @@ export async function saveConnection(data: Partial<McpConnection>) {
   const next = list.filter(c=>c.id!==id);
   next.push({id,name,url,token:String(data.token || '').trim().slice(0,2048)});
   await chrome.storage.local.set({[STORE]:next});
+  sessions.delete(id);
+  initialized.delete(id);
   return {id,name,url};
 }
 export async function removeConnection(id: string) {
   await chrome.storage.local.set({[STORE]:(await allConnections()).filter(c=>c.id!==id)});
+  sessions.delete(id);
+  initialized.delete(id);
   return {success:true};
 }
 const sessions = new Map<string,string>();
-async function request(id: string, method: string, params: any = {}): Promise<any> {
+const initialized = new Set<string>();
+async function request(id: string, method: string, params: any = {}, notification = false): Promise<any> {
   const c = (await allConnections()).find(c=>c.id===id);
   if (!c) throw new Error('Unknown MCP server');
   const controller = new AbortController();
@@ -43,11 +48,16 @@ async function request(id: string, method: string, params: any = {}): Promise<an
     const headers: Record<string,string> = {'Content-Type':'application/json','Accept':'application/json, text/event-stream','MCP-Protocol-Version':'2025-03-26'};
     if (c.token) headers.Authorization = 'Bearer ' + c.token;
     if (sessions.has(id)) headers['Mcp-Session-Id'] = sessions.get(id)!;
-    const response = await fetch(c.url,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id:crypto.randomUUID(),method,params}),signal:controller.signal,redirect:'error'});
-    if (!response.ok) throw new Error('MCP HTTP ' + response.status);
+    const response = await fetch(c.url,{method:'POST',headers,body:JSON.stringify(notification ? {jsonrpc:'2.0',method,params} : {jsonrpc:'2.0',id:crypto.randomUUID(),method,params}),signal:controller.signal,redirect:'error'});
+    if (!response.ok) {
+      if (response.status === 404) { sessions.delete(id); initialized.delete(id); }
+      throw new Error('MCP HTTP ' + response.status);
+    }
     const sid = response.headers.get('Mcp-Session-Id');
     if (sid) sessions.set(id,sid);
+    if (notification && response.status === 202) return null;
     const raw = await response.text();
+    if (notification && !raw.trim()) return null;
     if (raw.length > 1024*1024) throw new Error('MCP response too large');
     let result: any;
     if ((response.headers.get('content-type') || '').includes('text/event-stream')) {
@@ -59,14 +69,20 @@ async function request(id: string, method: string, params: any = {}): Promise<an
   } finally {clearTimeout(timer)}
 }
 async function ensureInitialized(id: string) {
-  if (sessions.has(id)) return;
-  await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:'1.2.0'}});
-  // Session-aware servers return Mcp-Session-Id; stateless servers are initialized per operation.
+  if (initialized.has(id)) return;
+  const result = await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:'1.2.0'}});
+  if (!result || typeof result.protocolVersion !== 'string') throw new Error('MCP server did not return a valid initialization response');
+  await request(id,'notifications/initialized',{},true);
+  initialized.add(id);
 }
 export async function listTools(id: string) {await ensureInitialized(id);return request(id,'tools/list',{});}
 export async function callTool(id: string, name: string, args: any) {
   if (!/^[\\w.\\/-]{1,150}$/.test(name)) throw new Error('Invalid tool name');
   if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Tool arguments must be an object');
   await ensureInitialized(id);
+  const catalog = await request(id,'tools/list',{});
+  if (!Array.isArray(catalog?.tools) || !catalog.tools.some((tool: {name?: string})=>tool.name === name)) {
+    throw new Error('Tool is not advertised by this MCP server: ' + name);
+  }
   return request(id,'tools/call',{name,arguments:args});
 }
