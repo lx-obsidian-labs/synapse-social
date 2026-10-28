@@ -2245,10 +2245,23 @@ async function inspectMcpTools(connection) {
     });row.append(name,run);root.appendChild(row);
   }
 }
+// GitHub's official hosted MCP endpoint: explicit user token, read-only by default.
+// Do not generate a PAT or store one in the page; users supply credentials in settings.
+const githubMcpPreset = document.createElement('button');
+githubMcpPreset.type = 'button';
+githubMcpPreset.className = 'btn btn-secondary';
+githubMcpPreset.textContent = 'GitHub MCP (read-only)';
+githubMcpPreset.title = 'Pre-fill the official GitHub remote MCP connection';
+githubMcpPreset.addEventListener('click', () => {
+  document.getElementById('mcp-name').value = 'GitHub';
+  document.getElementById('mcp-url').value = 'https://api.githubcopilot.com/mcp/';
+  mcpStatus('GitHub remote MCP selected. Add a fine-grained GitHub token with repository read permissions, then choose Add. Write operations are disabled for this preset.');
+});
+document.getElementById('mcp-add')?.parentElement?.appendChild(githubMcpPreset);
 document.getElementById('mcp-add')?.addEventListener('click',async()=>{
   const name=document.getElementById('mcp-name').value.trim();const url=document.getElementById('mcp-url').value.trim();const token=document.getElementById('mcp-token').value.trim();
   try{const u=new URL(url);const origin=u.origin+'/*';const allowed=await chrome.permissions.request({origins:[origin]});if(!allowed){mcpStatus('Permission declined');return}
-    const result=await mcpMessage('MCP_SAVE_CONNECTION',{name,url,token});if(result?.error){mcpStatus(result.error);return}
+    const result=await mcpMessage('MCP_SAVE_CONNECTION',{name,url,token,readOnly:true});if(result?.error){mcpStatus(result.error);return}
     document.getElementById('mcp-token').value='';mcpStatus('Connected '+name+'. Choose Tools to inspect capabilities.');await refreshMcpConnections();
   }catch(e){mcpStatus('Connection setup failed: '+e.message)}
 });
