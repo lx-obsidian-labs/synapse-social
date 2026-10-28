@@ -971,7 +971,7 @@ async function planNextAction(pageState, context) {
       /\\b(play|listen|watch)\\b/i.test(context?.objective || '') &&
       /[?&]search_query=/.test(pageState?.url || '')) {
     const links = Array.isArray(pageState.links) ? pageState.links : []
-    const video = links.find(x => /\\/watch\\?v=/.test(String(x.href || x.url || '')) &&
+    const video = links.find(x => /\/watch\?v=/.test(String(x.href || x.url || '')) &&
       /giveon|givēon/i.test(String(x.text || x.title || x.label || '')))
     if (video) return { type: 'navigate', target: String(video.href || video.url), value: '' }
   }
@@ -1742,7 +1742,7 @@ async function runAgentLoop(objective, initialUserMessage) {
       const recent = actionHistory.slice(-3)
       if (recent.length >= 2 && recent.every(x => /^(extract|summarize|observe|wait)$/.test(x.type))) {
         const links = Array.isArray(pageState.links) ? pageState.links : []
-        const video = links.find(x => /\\/watch\\?v=/.test(String(x.href || x.url || '')) &&
+        const video = links.find(x => /\/watch\?v=/.test(String(x.href || x.url || '')) &&
           /giveon|givēon/i.test(String(x.text || x.title || x.label || '')))
         if (video) {
           action = { type: 'click', target: String(video.text || video.title || video.label || video.href || video.url), value: '' }
