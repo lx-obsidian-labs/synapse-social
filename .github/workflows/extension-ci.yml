@@ -34,13 +34,13 @@ jobs:
         run: npm run zip
       - name: Validate package
         run: |
-          node -e "const fs=require('fs');const p='dist/manifest.json';const m=JSON.parse(fs.readFileSync(p));for(const x of ['background.js','content.js','sidepanel.js','shell.js','popup.js','sidepanel.html','popup.html'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!=='1.2.0')throw Error('Version mismatch')"
+          node -e "const fs=require('fs');const p='dist/manifest.json';const m=JSON.parse(fs.readFileSync(p));for(const x of ['background.js','content.js','sidepanel.js','shell.js','browser-flow.js','popup.js','sidepanel.html','popup.html'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!=='1.2.0')throw Error('Version mismatch')"
       - name: Verify ZIP structure and integrity
         run: |
           set -euo pipefail
           test -s synapse-ai-v1.2.0-test.zip
           unzip -t synapse-ai-v1.2.0-test.zip
-          for file in manifest.json background.js content.js sidepanel.html sidepanel.js shell.js popup.html popup.js; do
+          for file in manifest.json background.js content.js sidepanel.html sidepanel.js browser-flow.js shell.js popup.html popup.js; do
             unzip -Z1 synapse-ai-v1.2.0-test.zip | grep -Fxq "$file" || { echo "::error::ZIP missing root-level $file"; exit 1; }
           done
           echo 'Extension ZIP verified: manifest and runtime files are at the archive root.'
