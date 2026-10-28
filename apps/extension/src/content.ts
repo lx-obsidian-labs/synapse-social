@@ -1815,18 +1815,27 @@ ${recentPosts.slice(0, 5).map((p, i) => `[Post ${i + 1}]: ${p}`).join('\n')}
   // ── Advanced Capabilities ──
 
   dismiss_dialog() {
-    markPageDirty()
-    const dismissButtons = document.querySelectorAll<HTMLElement>(
-      '[aria-label="Close"], [aria-label="Dismiss"], [aria-label="Accept"], [aria-label="Got it"], .close-button, .modal-close, [data-dismiss], .cookie-accept, .accept-cookies, .cc-btn, button:has-text("Accept"), button:has-text("Got it"), button:has-text("Close"), button:has-text("Dismiss")'
-    )
-    let dismissed = 0
-    dismissButtons.forEach(el => { el.click(); dismissed++ })
-    // Also try clicking overlays
-    if (dismissed === 0) {
-      const overlay = document.querySelector<HTMLElement>('[role="dialog"] [aria-label="Close"], dialog .close, .modal-header .close')
-      if (overlay) { overlay.click(); dismissed++ }
+    // Native querySelectorAll does not support Playwright's :has-text().
+    // Only act on controls inside a visible dialog or cookie banner, not
+    // arbitrary page buttons named "Close".
+    const scopes = Array.from(document.querySelectorAll<HTMLElement>(
+      '[role="dialog"], dialog, [aria-modal="true"], [class*="cookie" i], [id*="cookie" i], [class*="consent" i], [id*="consent" i]'
+    )).filter(isElementReady)
+    const labels = /^(close|dismiss|accept|accept all|agree|i agree|got it|not now|no thanks|reject all)$/i
+    for (const scope of scopes) {
+      const controls = Array.from(scope.querySelectorAll<HTMLElement>(
+        'button, [role="button"], [aria-label], input[type="button"]'
+      ))
+      const match = controls.find(el => isElementReady(el) && labels.test(
+        (el.getAttribute('aria-label') || el.textContent || (el as HTMLInputElement).value || '').trim()
+      ))
+      if (match) {
+        markPageDirty()
+        match.click()
+        return { success: true, result: 'Dismissed visible dialog using ' + (match.getAttribute('aria-label') || match.textContent || 'button').trim().slice(0, 60) }
+      }
     }
-    return { success: true, result: dismissed > 0 ? `Dismissed ${dismissed} dialog(s)` : 'No dialogs found to dismiss' }
+    return { success: true, result: 'No visible dismissible dialog found' }
   },
 
   switch_to_iframe(args) {
