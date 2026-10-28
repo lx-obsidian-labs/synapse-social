@@ -28,7 +28,6 @@ jobs:
           node --version
           npm --version
           npm ls bestzip --depth=0
-          npm exec --no -- bestzip --help > /dev/null
       - name: Build and package extension
         run: npm run zip
       - name: Validate package
