@@ -51,16 +51,16 @@ function groundedSnapshot(sig: string): string {
     if (lines.length >= 80) break
     if (!isElementReady(el)) continue
     const role = el.getAttribute('role') || ({ A: 'link', BUTTON: 'button', INPUT: 'textbox', TEXTAREA: 'textbox', SELECT: 'combobox' } as Record<string,string>)[el.tagName] || 'control'
-    const name = (el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.textContent || el.getAttribute('title') || '').trim().replace(/\\s+/g, ' ').slice(0, 90)
+    const name = (el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.textContent || el.getAttribute('title') || '').trim().replace(/\s+/g, ' ').slice(0, 90)
     if (!name && role !== 'textbox') continue
     const ref = 'e' + (lines.length + 1)
     snapshotRefs.set(ref, el)
     lines.push(role + ' "' + name + '" [ref=' + ref + ']' + (el instanceof HTMLAnchorElement ? ' href=' + el.href.slice(0, 130) : ''))
   }
-  return lines.join('\\n')
+  return lines.join('\n')
 }
 function resolveSnapshotRef(ref: string): Element | null {
-  if (!/^e\\d+$/.test(ref)) return null
+  if (!/^e\d+$/.test(ref)) return null
   if (snapshotSignature !== pageSignature()) return null
   const el = snapshotRefs.get(ref)
   return el?.isConnected && isElementReady(el) ? el : null
@@ -214,14 +214,19 @@ async function waitForVisibleInput(candidates: string[], timeoutMs = 10000): Pro
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     for (const sel of candidates) {
-      try {
-        const el = querySelectorDeep(sel) as HTMLElement | null
-        if (el && isElementReady(el) && !(el as HTMLInputElement).disabled) {
-          return { el, selector: sel }
-        }
-      } catch { /* invalid selector — skip */ }
+      const candidate = (resolveSnapshotRef(sel) || querySelectorDeep(sel)) as HTMLElement | null
+      if (!candidate || !isElementReady(candidate)) continue
+      // A role="searchbox" wrapper is not necessarily an editable DOM node.
+      // Setting HTMLInputElement.prototype.value on such a DIV throws
+      // "TypeError: Illegal invocation"; unwrap it before typing.
+      const el = candidate instanceof HTMLInputElement || candidate instanceof HTMLTextAreaElement || candidate.isContentEditable
+        ? candidate
+        : candidate.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, [contenteditable="true"]')
+      if (!el || !isElementReady(el) || (el instanceof HTMLInputElement && (el.disabled || el.readOnly))) continue
+      if (el instanceof HTMLTextAreaElement && (el.disabled || el.readOnly)) continue
+      return { el, selector: sel }
     }
-    await new Promise(r => setTimeout(r, 250))
+    await new Promise(r => setTimeout(r, 200))
   }
   return null
 }
@@ -246,8 +251,11 @@ async function typeInto(el: HTMLElement, text: string) {
     // React/frameworks register the change.
     el.focus({ preventScroll: true })
     document.execCommand('insertText', false, text)
-    el.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }))
   } else {
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
+      throw new TypeError('Target is not a native or contenteditable input')
+    }
     const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
     if (setter) {
@@ -265,6 +273,9 @@ async function clearInput(el: HTMLElement) {
   if (isCE) {
     try { document.execCommand('selectAll', false); document.execCommand('delete', false) } catch {}
   } else {
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
+      throw new TypeError('Target is not a native or contenteditable input')
+    }
     const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
     if (setter) { setter.call(el, ''); el.dispatchEvent(new InputEvent('input', { bubbles: true })) }
@@ -272,12 +283,27 @@ async function clearInput(el: HTMLElement) {
   }
 }
 
-async function submitInput(el: HTMLElement) {
-  await new Promise(r => setTimeout(r, 150 + Math.random() * 400))
+async function submitInput(el: HTMLElement): Promise<boolean> {
+  // Synthetic keydown(Enter) alone does not perform native form submission.
+  // Use requestSubmit (which raises submit handlers and honors validation).
+  const field = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el : null
+  if (field) {
+    const form = field.form || field.closest('form')
+    if (form instanceof HTMLFormElement && typeof form.requestSubmit === 'function') {
+      form.requestSubmit()
+      return true
+    }
+    if (/(^|\.)youtube\.com$/.test(location.hostname)) {
+      const searchButton = document.querySelector<HTMLElement>('button#search-icon-legacy, ytd-searchbox button[aria-label="Search"]')
+      if (searchButton) { searchButton.click(); return true }
+    }
+  }
+  // Contenteditable editors and custom widgets may handle keyboard events.
   const opts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true } as KeyboardEventInit
   el.dispatchEvent(new KeyboardEvent('keydown', opts))
   el.dispatchEvent(new KeyboardEvent('keypress', opts))
   el.dispatchEvent(new KeyboardEvent('keyup', opts))
+  return false
 }
 
 // --- Auth helpers (generic, works on any site) ---
@@ -606,7 +632,8 @@ const tools: Record<string, ToolFn> = {
     const chatUrl = /(chatgpt|openai\.com|claude\.ai|gemini|bard|copilot|bing\.com\/chat)/i.test(location.href)
     const autoSubmit = isComposer || isSearch || chatUrl
     if (autoSubmit) {
-      await submitInput(el)
+      const sent = await submitInput(el)
+      if (isSearch && !sent) return { success: false, error: 'Search input filled, but no native form or search button could submit it' }
     }
 
     return { success: true, result: `Typed "${text}" into ${matched}${autoSubmit ? ' + Enter' : ''}` }
