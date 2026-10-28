@@ -1247,6 +1247,21 @@ function verifyAction(action, result, pageState) {
 // declaring done — mirrors how browser benchmarks evaluate task success.
 
 async function verifyObjective(pageState, context) {
+  // Video autoplay may be blocked. Checking the watch URL alone would be a
+  // false success; require observed media to be playing and advancing.
+  if (/youtube\.com/i.test(pageState.url || '') &&
+      /\b(play|playback|listen|watch)\b/i.test(context.objective || '') &&
+      /\/watch\?v=/.test(pageState.url || '')) {
+    const first = pageState.mediaPlayback
+    if (!first?.playing) return { complete: false, confidence: 1, reason: 'Video has not started playback (paused or not ready).' }
+    await sleep(900)
+    const second = (await observePage()).mediaPlayback
+    if (second?.playing && second.currentTime > first.currentTime + 0.2) {
+      return { complete: true, confidence: 1, reason: 'Playback time is advancing.' }
+    }
+    return { complete: false, confidence: 1, reason: 'Video playback has not advanced; try clicking Play.' }
+  }
+
   const prompt = `You are a strict evaluator. Decide if the user's objective is COMPLETE from the current page state.
 Objective: ${context.objective}
 Completed so far: ${context.completedTasks.join(', ') || 'none'}
@@ -1581,13 +1596,9 @@ async function runAgentLoop(objective, initialUserMessage) {
 
     // --- Force strategy change if too many consecutive failures ---
     if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-      addMessage('system', `⚠️ ${consecutiveFailures} failures — switching strategy`)
-      scrollToBottom()
-      await executeAction({ type: 'search', target: objective, value: '' })
-      await new Promise(r => setTimeout(r, 1500))
-      consecutiveFailures = 0; failedActions.clear(); actionHistory = []
-      const freshPage = await observePage()
-      agentContext.url = freshPage.url || ''
+      addMessage('system', '⛔ Three consecutive browser failures. Stopping without repeating the same broken operation.')
+      transition(AgentState.FAILED)
+      break
     }
 
     // 1. Observe
@@ -1910,10 +1921,11 @@ async function runAgentLoop(objective, initialUserMessage) {
         if (!actionToRun || actionToRun.type === 'done') actionToRun = { type: 'observe', target: '', value: '' }
         stepLabel = `${actionToRun.type}${actionToRun.target ? ': ' + actionToRun.target : ''}${actionToRun.value ? ' = "' + actionToRun.value.slice(0, 40) + '"' : ''}`
       } else {
-        // Exhausted retries — wipe blacklists so the next outer step can diverge
-        failedActions.clear(); actionHistory = []
-        addMessage('system', `⚠️ Gave up on step ${stepNum} after ${MAX_ACTION_RETRIES} retries — moving on.`)
-        scrollToBottom()
+        // Persistent failures are terminal for this run; restarting the same
+        // step on the next iteration hides the problem and burns API calls.
+        addMessage('system', '⛔ Action could not be completed after corrective replanning. Review the error and try again.')
+        transition(AgentState.FAILED)
+        agentStopRequested = true
       }
     }
 
