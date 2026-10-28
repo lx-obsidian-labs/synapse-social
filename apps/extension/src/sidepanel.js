@@ -154,8 +154,8 @@ const MAX_ACTION_RETRIES = 2       // corrective re-plans per step before giving
 const NAV_ACTIONS = new Set(['click', 'type', 'key', 'search', 'navigate', 'select', 'check', 'upload', 'dismiss', 'design', 'forward', 'reload'])
 
 // --- Pacing + site helpers (stop new-chat thrash, slow decisions) ---
-const PLAN_DELAY_MS = 1200   // deliberate "thinking" pause before each decision
-const EXEC_DELAY_MS = 350    // small beat before executing an action (visual pacing)
+const PLAN_DELAY_MS = 150   // deliberate "thinking" pause before each decision
+const EXEC_DELAY_MS = 75    // small beat before executing an action (visual pacing)
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
 function hostOf(url) {
@@ -965,6 +965,16 @@ ${PLATFORM_GUIDE}
 }
 
 async function planNextAction(pageState, context) {
+  // Deterministic fast path: a search result already has the destination URL.
+  // Avoid another LLM round-trip for a routine YouTube video selection.
+  if (/youtube\\.com/i.test(pageState?.url || '') &&
+      /\\b(play|listen|watch)\\b/i.test(context?.objective || '') &&
+      /[?&]search_query=/.test(pageState?.url || '')) {
+    const links = Array.isArray(pageState.links) ? pageState.links : []
+    const video = links.find(x => /\\/watch\\?v=/.test(String(x.href || x.url || '')) &&
+      /giveon|givēon/i.test(String(x.text || x.title || x.label || '')))
+    if (video) return { type: 'navigate', target: String(video.href || video.url), value: '' }
+  }
   const prompt = await buildActionPrompt(pageState, context)
   const t0 = performance.now()
   const response = await sendToBackground('AI_CHAT', {
