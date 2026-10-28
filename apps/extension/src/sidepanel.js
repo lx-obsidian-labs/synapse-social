@@ -2245,6 +2245,15 @@ async function inspectMcpTools(connection) {
     });row.append(name,run);root.appendChild(row);
   }
 }
+const githubPreset = document.createElement('button');
+githubPreset.className = 'btn btn-secondary';
+githubPreset.textContent = 'GitHub (read-only)';
+githubPreset.onclick = () => {
+  document.getElementById('mcp-name').value = 'GitHub (read-only)';
+  document.getElementById('mcp-url').value = 'https://api.githubcopilot.com/mcp/readonly';
+  mcpStatus('GitHub read-only endpoint ready. Enter authentication in the connection form and select Add.');
+};
+document.getElementById('mcp-add')?.parentElement?.append(githubPreset);
 document.getElementById('mcp-add')?.addEventListener('click',async()=>{
   const name=document.getElementById('mcp-name').value.trim();const url=document.getElementById('mcp-url').value.trim();const token=document.getElementById('mcp-token').value.trim();
   try{const u=new URL(url);const origin=u.origin+'/*';const allowed=await chrome.permissions.request({origins:[origin]});if(!allowed){mcpStatus('Permission declined');return}
