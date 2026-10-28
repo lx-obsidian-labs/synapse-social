@@ -23,13 +23,26 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - name: Check packaging dependency
+        run: |
+          node --version
+          npm --version
+          npm ls bestzip --depth=0
+          npm exec --no -- bestzip --help > /dev/null
       - name: Build and package extension
         run: npm run zip
       - name: Validate package
         run: |
           node -e "const fs=require('fs');const p='dist/manifest.json';const m=JSON.parse(fs.readFileSync(p));for(const x of ['background.js','content.js','sidepanel.js','shell.js','popup.js','sidepanel.html','popup.html'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!=='1.2.0')throw Error('Version mismatch')"
-      - name: Verify ZIP
-        run: unzip -t synapse-ai-v1.2.0-test.zip
+      - name: Verify ZIP structure and integrity
+        run: |
+          set -euo pipefail
+          test -s synapse-ai-v1.2.0-test.zip
+          unzip -t synapse-ai-v1.2.0-test.zip
+          for file in manifest.json background.js content.js sidepanel.html sidepanel.js shell.js popup.html popup.js; do
+            unzip -Z1 synapse-ai-v1.2.0-test.zip | grep -Fxq "$file" || { echo "::error::ZIP missing root-level $file"; exit 1; }
+          done
+          echo 'Extension ZIP verified: manifest and runtime files are at the archive root.'
       - uses: actions/upload-artifact@v4
         with:
           name: synapse-ai-v1.2.0-test
