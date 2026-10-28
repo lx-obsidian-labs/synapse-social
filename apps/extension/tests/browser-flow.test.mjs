@@ -46,3 +46,34 @@ test('Three distinct source hosts satisfy the three-source gate',()=>{
   assert.equal(flow.researchReadiness('Compare three coding assistants',notes).ready,true)
   assert.equal(flow.researchReadiness('Compare three coding assistants',notes).sourceCount,3)
 })
+
+test('YouTube results choose the first relevant official video, not a channel',()=>{
+  const s={
+    url:'https://www.youtube.com/results?search_query=Giveon+popular+songs',
+    links:[
+      {text:'GIVĒON @Giveon - channel',href:'https://www.youtube.com/@Giveon'},
+      {text:'Unrelated singer - video',href:'https://www.youtube.com/watch?v=12345678901'},
+      {text:'GIVĒON - Heartbreak Anniversary (Official Music Video)',href:'https://www.youtube.com/watch?v=ABCDEFGHIJK'},
+      {text:'GIVĒON - Another Song',href:'https://www.youtube.com/watch?v=ABCDEFGHIJL'}
+    ]
+  }
+  const a=flow.videoActionForObjective("Open YouTube, search for Giveon’s most popular songs, play the first relevant music video, and confirm that playback has started.",s)
+  assert.deepEqual(a,{type:'navigate',target:'https://www.youtube.com/watch?v=ABCDEFGHIJK',value:''})
+})
+test('On YouTube watch page, suppress repeated search and verify actual playback',()=>{
+  const objective="Open YouTube, search for Giveon’s most popular songs, play the first relevant music video"
+  const watch='https://www.youtube.com/watch?v=ABCDEFGHIJK'
+  assert.deepEqual(flow.videoActionForObjective(objective,{url:watch,mediaPlayback:{playing:false,currentTime:0}}),{type:'media',target:'play',value:''})
+  assert.deepEqual(flow.videoActionForObjective(objective,{url:watch,mediaPlayback:{playing:true,currentTime:2}}),{type:'done',target:'',value:''})
+  assert.equal(flow.isYouTubeWatch(watch),true)
+  assert.equal(flow.isYouTubeWatch('https://www.youtube.com/results?search_query=Giveon'),false)
+})
+test('Playback verification requires media time to advance while playing',()=>{
+  assert.equal(flow.hasAdvancedPlayback({playing:true,currentTime:1},{playing:true,currentTime:2}),true)
+  assert.equal(flow.hasAdvancedPlayback({playing:true,currentTime:1},{playing:true,currentTime:1}),false)
+  assert.equal(flow.hasAdvancedPlayback({playing:true,currentTime:1},{playing:false,currentTime:2}),false)
+})
+test('Do not take control of ordinary non-playback YouTube research',()=>{
+  const state={url:'https://www.youtube.com/watch?v=ABCDEFGHIJK',mediaPlayback:{playing:true,currentTime:1}}
+  assert.equal(flow.videoActionForObjective('Read YouTube video description',state),null)
+})
