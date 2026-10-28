@@ -975,8 +975,12 @@ async function planNextAction(pageState, context) {
   setHudLatency(dt)
   if (!response.success) { const reason = response.error || 'AI request failed'; pushHudLog('PLAN', reason, 'err'); throw new Error('AI planning unavailable: ' + reason) }
   pushHudLog('PLAN', 'decision @ ' + Math.round(dt) + 'ms', 'ok')
-  const action = parseAction(response.content)
-  return action || { type: 'observe', target: '', value: '' }
+  const action = parseAction(response.content || '')
+  if (!action) {
+    const preview = String(response.content || '').slice(0, 180)
+    throw new Error('AI returned no valid browser action. ' + preview)
+  }
+  return action
 }
 
 // --- Action Executor: pure switch, knows nothing about AI ---
@@ -1605,6 +1609,16 @@ async function runAgentLoop(objective, initialUserMessage) {
     lastObservedState = pageState   // refresh composer/URL awareness for guards
     pushHudLog('OBSERVE', `${pageState.inputs?.length || 0} in · ${pageState.buttons?.length || 0} btn · ${pageState.links?.length || 0} lnk`, 'info')
 
+    // A stable blank page is not actionable. Avoid spending tokens on hallucinated controls.
+    if (!pageState.loading && !pageState.streaming &&
+        !pageState.inputs?.length && !pageState.buttons?.length &&
+        !pageState.links?.length && !pageState.textSummary &&
+        /^chrome:|^edge:|^about:/.test(pageState.url || '')) {
+      addMessage('system', '⚠️ Open a normal webpage before starting browser automation.')
+      scrollToBottom()
+      transition(AgentState.FAILED)
+      break
+    }
     // 2. Plan
     transition(AgentState.PLANNING)
     setHudAction('⟢ COMPUTING NEXT ACTION…')
