@@ -38,6 +38,34 @@ function querySelectorDeep(selector, root = document) {
   return null
 }
 
+// Snapshot-scoped element references, inspired by Playwright MCP.
+// Refs are intentionally invalidated on a changed page signature.
+let snapshotRefs = new Map<string, Element>()
+let snapshotSignature = ''
+function groundedSnapshot(sig: string): string {
+  snapshotRefs = new Map()
+  snapshotSignature = sig
+  const nodes = document.querySelectorAll<HTMLElement>('a[href], button, input, textarea, select, [role="button"], [role="link"], [role="textbox"], [role="searchbox"]')
+  const lines: string[] = []
+  for (const el of Array.from(nodes)) {
+    if (lines.length >= 80) break
+    if (!isElementReady(el)) continue
+    const role = el.getAttribute('role') || ({ A: 'link', BUTTON: 'button', INPUT: 'textbox', TEXTAREA: 'textbox', SELECT: 'combobox' } as Record<string,string>)[el.tagName] || 'control'
+    const name = (el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.textContent || el.getAttribute('title') || '').trim().replace(/\\s+/g, ' ').slice(0, 90)
+    if (!name && role !== 'textbox') continue
+    const ref = 'e' + (lines.length + 1)
+    snapshotRefs.set(ref, el)
+    lines.push(role + ' "' + name + '" [ref=' + ref + ']' + (el instanceof HTMLAnchorElement ? ' href=' + el.href.slice(0, 130) : ''))
+  }
+  return lines.join('\\n')
+}
+function resolveSnapshotRef(ref: string): Element | null {
+  if (!/^e\\d+$/.test(ref)) return null
+  if (snapshotSignature !== pageSignature()) return null
+  const el = snapshotRefs.get(ref)
+  return el?.isConnected && isElementReady(el) ? el : null
+}
+
 // --- Visual Cursor ---
 // Shows a pulsing ring around the element being interacted with
 
@@ -412,7 +440,7 @@ const tools: Record<string, ToolFn> = {
     selector = selector.replace(/^(css_selector|text|selector)=/i, '').replace(/^['"]|['"]$/g, '').trim()
     if (!selector) return { success: false, error: 'Usage: click_element: css_selector' }
 
-    const el = querySelectorDeep(selector) as HTMLElement | null
+    const el = (resolveSnapshotRef(selector) || querySelectorDeep(selector)) as HTMLElement | null
     if (el) { flashElement(el); el.click(); return { success: true, result: `Clicked: ${selector}` } }
 
     // Fallback: treat input as text to find on page
@@ -834,6 +862,7 @@ const tools: Record<string, ToolFn> = {
         loading,
         streaming,
         textSummary: textSummary.slice(0, 3200),
+        accessibilitySnapshot: groundedSnapshot(sig),
         inputs: inputs.slice(0, 12),
         buttons: buttons.slice(0, 20),
         links: links.slice(0, 12),
