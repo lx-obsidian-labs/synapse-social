@@ -2180,7 +2180,11 @@ ${recentPosts.slice(0, 5).map((p, i) => `[Post ${i + 1}]: ${p}`).join('\n')}
     const selector = args.slice(1).join(' ').trim()
     if (!key) return { success: false, error: 'Usage: press_key: key_name [selector]. Keys: enter, escape, tab, up, down, left, right, space, backspace, delete, home, end, pageup, pagedown' }
 
-    const targetEl: HTMLElement = selector ? (querySelectorDeep(selector) as HTMLElement) || document.body : document.body
+    // Preserve focus: pressing Enter on document.body after a text fill
+    // discards the active search input and usually does nothing.
+    const targetEl: HTMLElement = selector
+      ? ((resolveSnapshotRef(selector) || querySelectorDeep(selector)) as HTMLElement) || document.body
+      : (document.activeElement instanceof HTMLElement ? document.activeElement : document.body)
     targetEl.focus()
 
     const keyMap: Record<string, { key: string; code: string }> = {
@@ -2202,6 +2206,15 @@ ${recentPosts.slice(0, 5).map((p, i) => `[Post ${i + 1}]: ${p}`).join('\n')}
     }
     const mapped = keyMap[key]
     if (!mapped) return { success: false, error: `Unknown key: "${key}". Use: ${Object.keys(keyMap).join(', ')}` }
+    if (key === 'enter' && (targetEl instanceof HTMLInputElement || targetEl instanceof HTMLTextAreaElement)) {
+      const field = targetEl as HTMLInputElement | HTMLTextAreaElement
+      const form = field.form || field.closest('form')
+      if (form instanceof HTMLFormElement && typeof form.requestSubmit === 'function') {
+        form.requestSubmit()
+        return { success: true, result: 'Submitted native form from focused input' }
+      }
+    }
+
 
     targetEl.dispatchEvent(new KeyboardEvent('keydown', { key: mapped.key, code: mapped.code, bubbles: true, cancelable: true }))
     targetEl.dispatchEvent(new KeyboardEvent('keypress', { key: mapped.key, code: mapped.code, bubbles: true, cancelable: true }))
