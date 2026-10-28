@@ -1833,6 +1833,15 @@ async function runAgentLoop(objective, initialUserMessage) {
         pushHudLog('EXEC', stepLabel + ' ✗ ' + (result.error || ''), 'err')
       consecutiveFailures++
 
+      // JavaScript runtime errors are deterministic: retrying the same DOM
+      // operation with a different model prompt cannot repair the executor.
+      if (/Illegal invocation|TypeError:|SyntaxError:|ReferenceError:/i.test(String(result.error || ''))) {
+        addMessage('system', '⛔ Browser executor error. Stopping instead of retrying the same broken operation: ' + result.error)
+        transition(AgentState.FAILED)
+        agentStopRequested = true
+        break
+      }
+
       // If we just failed to send the objective into a chat composer, there's
       // no composer to type into (almost always: ChatGPT isn't logged in).
       // Tell the user instead of looping forever on the same failure.
