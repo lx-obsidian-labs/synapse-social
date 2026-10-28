@@ -146,6 +146,7 @@ const MAX_CONSECUTIVE_SAME_TOOL = 2
 const TOOL_TIMEOUT = 20000
 const ACTION_HISTORY_SIZE = 8
 let actionHistory = []
+const searchReplanAttempts = new Map()
 let failedActions = new Map()      // "type:target" → count of failures
 let consecutiveFailures = 0         // resets on success
 let lastStableUrl = ''             // last known-good page URL, used for rollback
@@ -849,6 +850,11 @@ async function buildActionPrompt(pageState, context) {
     .map(([key]) => key)
   const blacklistStr = blacklist.length > 0 ? `\n## 🚫 BLACKLIST — These actions already failed. DO NOT RETRY:\n${blacklist.map(k => `  - ${k}`).join('\n')}\n` : ''
 
+  const activeSearch = globalThis.SynapseBrowserFlow?.searchQuery(pageState.url)
+  const activeSearchNote = activeSearch !== null && activeSearch !== undefined
+    ? '\n## VERIFIED SEARCH STATE: Results URL already contains query "' + activeSearch + '". Do NOT type the same search or press Enter again. Open a relevant result link, extract the page or navigate to an official website.\\n'
+    : ''
+
   const strategyHint = consecutiveFailures >= 2
     ? `\n## ⚠️ ${consecutiveFailures} CONSECUTIVE FAILURES. Change strategy NOW:\n  - Use "search" or "navigate" to a different site\n  - Use "back" to return to previous page\n  - Try a completely different action type\n`
     : ''
@@ -878,7 +884,7 @@ async function buildActionPrompt(pageState, context) {
 
 ## Page State
 ${JSON.stringify(compactPageState(pageState))}
-${blacklistStr}${summary}${dialogNote}${selectNote}${iframeNote}${streamingNote}${elementCounts}
+${blacklistStr}${activeSearchNote}${summary}${dialogNote}${selectNote}${iframeNote}${streamingNote}${elementCounts}
 ## Mission${strategyHint}
 Objective: ${context.objective || 'None'}
 ${context.plan.length ? `Plan (work these in order, mark each done as you complete it):\n${context.plan.map((s, i) => `${i + 1}. ${context.planDone.includes(i) ? '✅' : '⬜'} ${s}`).join('\n')}` : 'Done: ' + (context.completedTasks.join(', ') || 'None')}
@@ -941,7 +947,7 @@ ${PLATFORM_GUIDE}
 ### Quick examples
 - click: {"type":"click","target":"DNS"}  (open a dashboard section)
 - type: {"type":"type","target":"Message ChatGPT","value":"Hello"}  (chat composer)
-- type: {"type":"type","target":"Search","value":"my query"}  (search box — Enter auto-pressed)
+- type: {"type":"type","target":"Search","value":"my query"}  (recognized search engines route directly to results; the query is verified)
 - wait: {"type":"wait","value":"5000"}
 - search: {"type":"search","target":"python tutorial"} or "wikipedia: AI"
 - parse: {"type":"parse"} — structured search results after search
@@ -1518,6 +1524,7 @@ async function runAgentLoop(objective, initialUserMessage) {
   actionHistory = []
   failedActions.clear()
   consecutiveFailures = 0
+  searchReplanAttempts.clear()
   agentContext.lastError = null
   agentContext.completedTasks = []
   agentContext.chatTurns = 0
@@ -1681,6 +1688,14 @@ async function runAgentLoop(objective, initialUserMessage) {
     // once with explicit state evidence prevents re-enter/Enter loops.
     const searchRoute = globalThis.SynapseBrowserFlow?.planSearchAction(action, pageState.url)
     if (searchRoute?.status === 'already-submitted') {
+      const replanKey = searchRoute.provider + ':' + searchRoute.query.toLowerCase()
+      const replanCount = (searchReplanAttempts.get(replanKey) || 0) + 1
+      searchReplanAttempts.set(replanKey, replanCount)
+      if (replanCount > 2) {
+        addMessage('system', '⛔ The planner requested the same completed search too many times. Stopping safely.')
+        transition(AgentState.FAILED)
+        break
+      }
       addMessage('system', '✓ Search results are already loaded. Selecting the next evidence-gathering action.')
       const correction = await planNextAction(pageState, {
         ...agentContext,
