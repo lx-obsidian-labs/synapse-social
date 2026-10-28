@@ -136,16 +136,18 @@ async function routeModelCall(
   for (let guard = 0; guard < maxIters; guard++) {
     const idx = pool.find(i => isModelAvailable(MODELS[i].name))
     if (idx === undefined) {
+      // Never clear the rate-limit cache and hammer the same endpoints in a tight loop.
+      // Let the next user request retry after cooldown instead.
+      if (pool.some(i => !modelHardFail.has(MODELS[i].name))) {
+        return { success: false, error: lastError || 'AI models temporarily unavailable or rate-limited. Retry in about a minute.' }
+      }
       // Every candidate in the pool is either temporarily failed OR permanently
       // hard-failed (404/403). If all are permanently unavailable there is
       // nothing left to try — bail out with a clear message instead of looping.
       if (pool.every(i => modelHardFail.has(MODELS[i].name))) {
         return { success: false, error: lastError || 'All AI models are unavailable (check NVIDIA API key / model entitlement)' }
       }
-      // Every candidate is temporarily failed — pause, flush the cooldowns, retry.
-      await new Promise(r => setTimeout(r, 3000))
-      modelFailureCache.clear()
-      continue
+      return { success: false, error: lastError || 'No AI model available' }
     }
     const model = MODELS[idx]
     let ok = false
