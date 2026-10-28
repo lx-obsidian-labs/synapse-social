@@ -1831,6 +1831,24 @@ html,body{width:100%;height:100%;overflow:hidden!important}
  .syn-right-tabs button .syn-icon{width:15px;height:15px}
  .syn-shortcut{min-height:36px}
 }
+
+/* Compact Synapse workspace: extension-first sizing, not a desktop dashboard. */
+.syn-shell{grid-template-columns:56px minmax(0,1fr) 0!important;max-width:100vw}
+.syn-nav{padding:8px 5px!important;gap:4px}
+.syn-brand{padding:7px 2px 12px!important;justify-content:center}
+.syn-brand strong,.syn-brand small,.syn-nav-footer,.syn-nav .syn-tab-label{display:none!important}
+.syn-mark{width:34px!important;height:34px!important;font-size:23px!important}
+.syn-nav .tabs .tab{justify-content:center!important;padding:10px 4px!important;min-width:0}
+.syn-nav .tabs .tab .syn-icon{width:19px!important;height:19px!important}
+.syn-right{display:none!important}
+.syn-shell .syn-center{min-width:0}
+.syn-shell .syn-center .syn-chat,.syn-shell .syn-center .syn-workspace{min-width:0}
+.syn-shell .syn-shortcuts{display:none}
+.syn-shell .syn-right-body{padding:8px!important}
+.syn-shell button,.syn-shell input{min-width:0}
+.syn-shell .syn-activity #hud-log{max-height:100px!important}
+@media(min-width:900px){.syn-shell{grid-template-columns:64px minmax(0,1fr) 250px!important}.syn-right{display:flex!important}.syn-right-tabs{height:42px!important}.syn-right-body{padding:9px!important}}
+@media(max-width:460px){.syn-shell{grid-template-columns:48px minmax(0,1fr) 0!important}.syn-nav{padding:6px 3px!important}.syn-mark{width:30px!important;height:30px!important}}
 </style>
   <script src="sidepanel.js"></script>
   <script src="shell.js"></script>
