@@ -1297,12 +1297,10 @@ function verifyAction(action, result, pageState) {
 async function verifyObjective(pageState, context) {
   if (isResearchMission(context.objective)) {
     const notes = context.researchEvidence || []
-    const requestedThree = /\b(three|3)\b/i.test(context.objective || '')
-    const domains = new Set(notes.map(n => {try {return new URL(n.url).hostname} catch {return ''}}).filter(Boolean))
-    if (requestedThree && domains.size < 3) {
-      return { complete: false, confidence: 1, reason: 'Only ' + domains.size + ' distinct source websites visited; three requested.' }
+    const readiness = globalThis.SynapseBrowserFlow.researchReadiness(context.objective, notes)
+    if (!readiness.ready) {
+      return { complete: false, confidence: 1, reason: 'Visited ' + readiness.sourceCount + ' of ' + readiness.required + ' required source websites.' }
     }
-    if (!notes.length) return { complete: false, confidence: 1, reason: 'No source pages have been read yet.' }
   }
 
   // Video autoplay may be blocked. Checking the watch URL alone would be a
