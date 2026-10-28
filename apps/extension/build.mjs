@@ -29,7 +29,7 @@ const SUPABASE_PROXY_URL = process.env.SUPABASE_PROXY_URL || ''
 // For public distribution set SUPABASE_PROXY_URL so no secret is shipped inside
 // the extension. When a proxy URL is present the raw NVIDIA key is NEVER baked
 // in, even if it exists in .env — the proxy holds it server-side instead.
-const NVIDIA_API_KEY = SUPABASE_PROXY_URL ? '' : (process.env.NVIDIA_API_KEY || '')
+const NVIDIA_API_KEY = '' // Never package an API key into a distributable extension.
 const isWatch = process.argv.includes('--watch')
 
 async function build() {
@@ -95,7 +95,7 @@ async function copyAssets() {
     cpSync(publicDir, distDir, { recursive: true })
   }
 
-  const assetsWithPlaceholders = ['sidepanel.html', 'popup.html', 'sidepanel.js']
+  const assetsWithPlaceholders = ['sidepanel.html', 'popup.html', 'popup.js', 'sidepanel.js']
   for (const file of assetsWithPlaceholders) {
     const srcPath = resolve(srcDir, file)
     if (existsSync(srcPath)) {
@@ -112,10 +112,19 @@ async function copyAssets() {
     }
   }
 
-  // Validate the raw (non-esbuild) JS file so syntax errors fail the build
-  const rawJs = [resolve(distDir, 'sidepanel.js')]
+  // Validate the raw (non-esbuild) JS files so syntax errors fail the build
+  const rawJs = [resolve(distDir, 'sidepanel.js'), resolve(distDir, 'popup.js')]
   for (const jsPath of rawJs) {
     if (existsSync(jsPath)) checkJsSyntax(jsPath)
+  }
+
+  // Never distribute raw model credentials or unresolved build placeholders.
+  for (const file of ['background.js', 'content.js', 'sidepanel.js', 'popup.js']) {
+    const path = resolve(distDir, file)
+    if (!existsSync(path)) continue
+    const output = readFileSync(path, 'utf-8')
+    if (/nvapi-[A-Za-z0-9_-]{12,}/.test(output)) throw new Error(`Potential NVIDIA credential embedded in ${file}`)
+    if (/__NVIDIA_API_KEY__/.test(output)) throw new Error(`Unresolved credential placeholder in ${file}`)
   }
 }
 
