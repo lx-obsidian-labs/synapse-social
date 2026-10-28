@@ -11,8 +11,9 @@ h1{font-size:27px;margin:0 0 10px}small{color:#6b7482}article{font-size:15px;whi
 @media(max-width:700px){main{margin:0;padding:25px;min-height:100vh}header{padding:12px}}
 @media print{body{background:#fff}header{display:none}main{margin:0;padding:0;box-shadow:none;max-width:none;min-height:0}}
 </style></head>
-<body><header><strong>◆ SYNAPSE · DOCUMENT PREVIEW</strong><button id="html">Download HTML</button><button id="text">Download TXT</button><button id="pdf">Print / Save PDF</button></header>
+<body><header><strong>◆ SYNAPSE · DOCUMENT PREVIEW</strong><button id="docx">Download Word</button><button id="native-pdf">Download PDF</button><button id="html">Download HTML</button><button id="text">Download TXT</button><button id="pdf">Print / Save PDF</button></header>
 <main><h1 id="title">Research report</h1><small id="meta"></small><article id="content"></article><p id="empty" hidden>Document not found. Run another research task to generate it.</p></main>
+<script src="document-export.js"></script>
 <script>
 (async()=>{
   const id=new URL(location.href).searchParams.get('id');
@@ -32,5 +33,7 @@ h1{font-size:27px;margin:0 0 10px}small{color:#6b7482}article{font-size:15px;whi
   document.getElementById('text').onclick=()=>download(doc.title+'\n\n'+doc.content,'text/plain;charset=utf-8','txt');
   document.getElementById('html').onclick=()=>download('<!DOCTYPE html>\n'+document.documentElement.outerHTML.replace(/<script>[\s\S]*?<\/script>/,'<script></script>'),'text/html;charset=utf-8','html');
   document.getElementById('pdf').onclick=()=>window.print();
+  document.getElementById('docx').onclick=()=>window.SynapseDocumentExport.docxExport(doc);
+  document.getElementById('native-pdf').onclick=()=>window.SynapseDocumentExport.pdfExport(doc);
 })();
 </script></body></html>
