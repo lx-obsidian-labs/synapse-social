@@ -33,3 +33,16 @@ test('Works with encoded characters and query normalization',()=>{
 test('Rejects a mere query field without an actual submitted results URL',()=>{
   assert.equal(flow.confirmsSearch('https://www.google.com/?q=foo','foo'),false)
 })
+
+test('Three-source research cannot finish after one or two sites',()=>{
+  const two=[{url:'https://cursor.com/'},{url:'https://github.com/features/copilot'}]
+  const verdict=flow.researchReadiness('Research three free AI coding assistants',two)
+  assert.equal(verdict.ready,false)
+  assert.equal(verdict.sourceCount,2)
+  assert.equal(verdict.required,3)
+})
+test('Three distinct source hosts satisfy the three-source gate',()=>{
+  const notes=[{url:'https://cursor.com/'},{url:'https://github.com/features/copilot'},{url:'https://codeium.com/'},{url:'https://github.com/pricing'}]
+  assert.equal(flow.researchReadiness('Compare three coding assistants',notes).ready,true)
+  assert.equal(flow.researchReadiness('Compare three coding assistants',notes).sourceCount,3)
+})
