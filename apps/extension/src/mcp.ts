@@ -34,7 +34,7 @@ export async function removeConnection(id: string) {
   return {success:true};
 }
 const sessions = new Map<string,string>();
-async function request(id: string, method: string, params: any = {}, isInit = false): Promise<any> {
+async function request(id: string, method: string, params: any = {}): Promise<any> {
   const c = (await allConnections()).find(c=>c.id===id);
   if (!c) throw new Error('Unknown MCP server');
   const controller = new AbortController();
@@ -60,8 +60,8 @@ async function request(id: string, method: string, params: any = {}, isInit = fa
 }
 async function ensureInitialized(id: string) {
   if (sessions.has(id)) return;
-  await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:'1.2.0'}},true);
-  // Stateless MCP servers do not issue session IDs. Initialize on each operation.
+  await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:'1.2.0'}});
+  // Session-aware servers return Mcp-Session-Id; stateless servers are initialized per operation.
 }
 export async function listTools(id: string) {await ensureInitialized(id);return request(id,'tools/list',{});}
 export async function callTool(id: string, name: string, args: any) {
