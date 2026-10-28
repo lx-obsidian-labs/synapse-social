@@ -215,7 +215,9 @@ function detectChatContext(pageState, context) {
   const onChatSite = isOnChatSite(url)
   const composerPresent = hasChatComposer(pageState)
   const promptSent = (context?.chatTurns || 0) > 0
-  const chatOpen = onChatSite || composerPresent || promptSent
+  // A generic search field/textbox on YouTube, Google or an admin dashboard
+  // is NOT an AI chat composer. Never suppress normal same-host navigation.
+  const chatOpen = onChatSite && (composerPresent || promptSent || Boolean(url))
   return { url, onChatSite, composerPresent, promptSent, chatOpen }
 }
 const MAX_CONSECUTIVE_FAILURES = 3  // after 3, force strategy change
@@ -1116,7 +1118,7 @@ async function executeAction(action) {
       // Programmatic state validation: if a conversation is already open, never
       // navigate to (re)open a chat — that just restarts the new-chat loop.
       // Stay in the current conversation instead.
-      if (ctx.chatOpen && (isOnChatSite(action.target) || (th && th === hostOf(ctx.url)))) {
+      if (ctx.onChatSite && ctx.chatOpen && (isOnChatSite(action.target) || (th && th === hostOf(ctx.url)))) {
         return { success: true, result: `Chat already open on ${ctx.url} — staying in the current conversation instead of navigating.` }
       }
       return sendToBackground('BROWSER_TOOL', { tool: 'navigate_to', args: [action.target] }, TOOL_TIMEOUT)
