@@ -108,7 +108,7 @@
     return { type: 'navigate', target: choice.url, value: '' };
   }
   function hasAdvancedPlayback(before, after) {
-    return !!before?.playing && !!after?.playing &&
+    return !!before?.playing && !!after?.playing && !before.adPlaying && !after.adPlaying &&
       Number.isFinite(before.currentTime) && Number.isFinite(after.currentTime) &&
       after.currentTime > before.currentTime + 0.2;
   }
