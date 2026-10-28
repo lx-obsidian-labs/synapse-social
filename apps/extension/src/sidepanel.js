@@ -385,7 +385,7 @@ async function autoRecover(tool, error, historyMessages, rawContent) {
 
 function parseAction(text) {
   // Try JSON format: {"type":"click","target":"..."}
-  const jsonMatch = text.match(/\{[\s\S]*?"type"\s*:\s*"(click|type|navigate|scroll|wait|extract|observe|done|search|back|forward|key|select|check|upload|save|copy|find|reload|print|zoom|dismiss|iframe|data|parse|read|summarize|translate|contacts|tabs|export|clean|design|create_account|download_image|gmail)"[\s\S]*?\}/)
+  const jsonMatch = text.match(/\{[\s\S]*?"type"\s*:\s*"(click|type|navigate|scroll|wait|extract|observe|done|search|back|forward|key|select|check|upload|save|copy|find|reload|print|zoom|dismiss|iframe|data|parse|read|summarize|translate|contacts|tabs|export|clean|design|create_account|download_image|gmail|mcp)"[\s\S]*?\}/)
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0])
@@ -1016,6 +1016,21 @@ ${PLATFORM_GUIDE}
   `
 }
 
+async function discoverMcpTools() {
+  const connections = await mcpMessage('MCP_LIST_CONNECTIONS', {});
+  if (!Array.isArray(connections)) return [];
+  const catalogs = await Promise.all(connections.slice(0, 8).map(async connection => {
+    try {
+      const result = await mcpMessage('MCP_LIST_TOOLS', { id: connection.id });
+      return (Array.isArray(result?.tools) ? result.tools : []).slice(0, 20).map(tool => ({
+        serverId: connection.id, server: connection.name, name: tool.name,
+        description: String(tool.description || '').slice(0, 220),
+        inputSchema: tool.inputSchema || { type: 'object', properties: {} }
+      }));
+    } catch { return []; }
+  }));
+  return catalogs.flat().slice(0, 50);
+}
 async function planNextAction(pageState, context) {
   // On a YouTube playback mission, use real page state rather than asking the
   // model to search again after a video has already been opened.
@@ -1024,9 +1039,11 @@ async function planNextAction(pageState, context) {
   // The browser observation includes fresh, snapshot-scoped element refs.
   // Prefer refs for grounded clicks, never invent or reuse stale refs.
   const prompt = await buildActionPrompt(pageState, context)
+  const mcpCatalog = Array.isArray(context.mcpCatalog) ? context.mcpCatalog : []
+  const mcpInstructions = mcpCatalog.length ? '\n## Available connected MCP tools\n' + JSON.stringify(mcpCatalog).slice(0, 9500) + '\nTo request a connected tool, output {"type":"mcp","target":"serverId:toolName","value":"{\\"key\\":\\"value\\"}"}. Use only listed server IDs and names. Every tool call requires user confirmation. Never fabricate arguments.\n' : ''
   const t0 = performance.now()
   const response = await sendToBackground('AI_CHAT', {
-    messages: [{ role: 'user', content: prompt }]
+    messages: [{ role: 'user', content: prompt + mcpInstructions }]
   }, 30000)
   const dt = performance.now() - t0
   if (response.model) setHudModel(response.model)
@@ -1135,6 +1152,21 @@ async function executeAction(action) {
       return sendToBackground('TOOL_EXECUTE', { tool: 'get_page_text', args: [] }, TOOL_TIMEOUT)
     case 'done':
       return { success: true, result: 'Mission complete' }
+    case 'mcp': {
+      const [serverId, ...rest] = String(action.target || '').split(':');
+      const toolName = rest.join(':');
+      const permitted = (agentContext.mcpCatalog || []).some(tool => tool.serverId === serverId && tool.name === toolName);
+      if (!permitted) return { success: false, error: 'MCP tool is not in the approved discovered catalog' };
+      let args;
+      try { args = JSON.parse(action.value || '{}'); } catch { return { success: false, error: 'Invalid MCP JSON arguments' }; }
+      if (!args || typeof args !== 'object' || Array.isArray(args)) return { success: false, error: 'MCP arguments must be a JSON object' };
+      if (!confirm('Synapse wants to run MCP tool ' + toolName + ' on connected server ' + serverId + '.\n\nArguments:\n' + JSON.stringify(args).slice(0, 2500) + '\n\nApprove this one operation?')) {
+        return { success: false, error: 'User denied MCP tool execution' };
+      }
+      const result = await mcpMessage('MCP_CALL_TOOL', { id: serverId, name: toolName, args });
+      if (result?.error) return { success: false, error: String(result.error) };
+      return { success: true, result };
+    }
     case 'search': {
       let q = (action.target + ' ' + action.value).replace(/\s+/g, ' ').trim()
       // Default to the CURRENT year (2026) for up-to-date results, unless the
@@ -1572,6 +1604,7 @@ async function runAgentLoop(objective, initialUserMessage) {
   agentContext.playbackVerifyFailures = 0
   agentContext.videoWaitSteps = 0
   agentContext.researchEvidence = []
+  agentContext.mcpCatalog = await discoverMcpTools()
   agentContext.plan = []
   agentContext.planDone = []
   actionHistory = []
