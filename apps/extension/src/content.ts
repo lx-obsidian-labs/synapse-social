@@ -418,6 +418,34 @@ const sleepMs = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 const tools: Record<string, ToolFn> = {
 
+  async ensure_media_playing() {
+    const videos = Array.from(document.querySelectorAll<HTMLVideoElement>('video'))
+    const video = videos.find(v => v.isConnected && isElementReady(v)) || videos[0]
+    if (!video) return { success: false, error: 'No HTML video element is available yet' }
+    if (video.ended) {
+      try { video.currentTime = 0 } catch {}
+    }
+    if (video.paused) {
+      // First try the site's visible Play control. If a site requires trusted
+      // interaction, playback may still be blocked and must be reported as such.
+      const button = document.querySelector<HTMLElement>('button.ytp-play-button, button[aria-label="Play"], [data-title-no-tooltip="Play"]')
+      if (button && isElementReady(button)) {
+        try { button.click() } catch {}
+      }
+      if (video.paused) {
+        try { await video.play() } catch (e) {
+          return { success: false, error: 'Playback blocked: ' + String((e as Error)?.message || e) }
+        }
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 350))
+    const playing = !video.paused && !video.ended && video.readyState >= 2
+    return playing
+      ? { success: true, result: 'Video is playing; pending playback-time verification' }
+      : { success: false, error: 'Video remains paused or is not ready; a manual Play click may be required' }
+  },
+
+
   // Navigation
   scroll_to_bottom() {
     markPageDirty()
@@ -764,7 +792,11 @@ const tools: Record<string, ToolFn> = {
 
   observe_page() {
     const sig = pageSignature()
-    if (_observeCache && _observeCache.sig === sig && !_observeDirty) {
+    // A playing video's currentTime advances without a DOM mutation.
+    // Never serve cached media state: playback verification needs fresh reads.
+    if (!_observeCache || _observeCache.sig !== sig || _observeDirty || document.querySelector('video')) {
+      // Re-snapshot the live DOM and player state below.
+    } else {
       return _observeCache.data
     }
     ensureDirtyObserver()
