@@ -250,7 +250,7 @@ async function typeInto(el: HTMLElement, text: string) {
     // call reproduces the full text exactly as provided, then fires input so
     // React/frameworks register the change.
     el.focus({ preventScroll: true })
-    document.execCommand('insertText', false, text)
+    if (!document.execCommand('insertText', false, text)) el.textContent = text
     el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }))
   } else {
     if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) {
@@ -260,7 +260,8 @@ async function typeInto(el: HTMLElement, text: string) {
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set
     if (setter) {
       setter.call(el, text)
-      el.dispatchEvent(new InputEvent('input', { bubbles: true }))
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }))
+      el.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
     } else {
       ;(el as HTMLInputElement).value = text
       el.dispatchEvent(new Event('input', { bubbles: true }))
