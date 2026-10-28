@@ -238,7 +238,7 @@ function focusAndClick(el: HTMLElement) {
 // Type character-by-character with a human-like cadence so every keystroke is
 // captured by the page (and it resists basic bot-detection).
 async function typeInto(el: HTMLElement, text: string) {
-  const isCE = el.getAttribute('contenteditable') === 'true' || el.getAttribute('role') === 'textbox' || el.getAttribute('role') === 'searchbox'
+  const isCE = el.isContentEditable && !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement)
   if (isCE) {
     // Insert the ENTIRE prompt in a single operation. Per-keystroke insertion
     // can drop or duplicate characters (garbled/random output); one insertText
@@ -261,7 +261,7 @@ async function typeInto(el: HTMLElement, text: string) {
 }
 
 async function clearInput(el: HTMLElement) {
-  const isCE = el.getAttribute('contenteditable') === 'true' || el.getAttribute('role') === 'textbox' || el.getAttribute('role') === 'searchbox'
+  const isCE = el.isContentEditable && !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement)
   if (isCE) {
     try { document.execCommand('selectAll', false); document.execCommand('delete', false) } catch {}
   } else {
@@ -589,11 +589,16 @@ const tools: Record<string, ToolFn> = {
     await clearInput(el)
     await typeInto(el, text)
 
+    // Confirm that the target input actually accepted the requested value.
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+      if (el.value !== text) return { success: false, error: 'Input value did not update after typing' }
+    }
+
     // 5. Submit — auto-press Enter ONLY for chat composers and search boxes.
     // For multi-field forms (login, signup) we must NOT auto-submit, or the
     // form fires before every field is filled. There the agent fills each
     // field then clicks the submit/"Log in" button (or sends key:enter).
-    const isComposer = el.getAttribute('contenteditable') === 'true' || el.getAttribute('role') === 'textbox'
+    const isComposer = el.isContentEditable && !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement)
     const isSearch = el.getAttribute('role') === 'searchbox' ||
       (el.tagName === 'INPUT' && ((el as HTMLInputElement).type === 'search' ||
         /^(search|search_query)$/i.test(el.id || '') ||
