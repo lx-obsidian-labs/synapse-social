@@ -25,7 +25,7 @@ let agentContext = {           // minimal context for LLM
   useVision: false,            // set to true after first vision fallback
   steps: 0,
   chatTurns: 0,                // how many messages we've sent into the current chat
-  maxSteps: 500,
+  maxSteps: 60,
   plan: [],                    // decomposed step checklist for the current objective
   planDone: [],                // indices of plan steps marked complete
 }
@@ -2013,7 +2013,7 @@ $('set-apikey-save').addEventListener('click', () => {
   try {
     if (v) chrome.storage.local.set({ synapse_api_key: v })
     else chrome.storage.local.remove('synapse_api_key')
-    setApiKeyStatus(v ? '✓ API key saved on this device' : '✓ Using bundled key', 'ok')
+    setApiKeyStatus(v ? '✓ API key saved on this device' : '✓ Personal key removed', 'ok')
   } catch (e) { setApiKeyStatus('Save failed: ' + e, 'err') }
 })
 $('set-test').addEventListener('click', async () => {
