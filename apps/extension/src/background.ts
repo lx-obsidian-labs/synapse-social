@@ -723,32 +723,37 @@ const BROWSER_TOOLS: Record<string, (args: string[]) => Promise<{ success: boole
   // Search without navigating away from the user's current page. Bing RSS provides
   // structured titles, URLs and snippets; fall back to Wikipedia when unavailable.
   async search_results(args) {
-    const query = args.join(' ').trim().slice(0,300)
-    if (!query) return { success:false, error:'Usage: search_results: research query' }
-    const timeout = AbortSignal.timeout(12000)
-    const decode = (s: string) => s.replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g,'$1').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/<[^>]*>/g,' ').replace(/\\s+/g,' ').trim()
+    const query = args.join(' ').trim().slice(0, 300)
+    if (!query) return { success: false, error: 'Usage: search_results: query' }
+    const decode = (s: string) => s
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'").replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ').trim()
     try {
       const url = 'https://www.bing.com/search?format=rss&q=' + encodeURIComponent(query)
-      const response = await fetch(url,{signal:timeout,headers:{Accept:'application/rss+xml, application/xml, text/xml'}})
-      if (!response.ok) throw new Error('Search provider HTTP '+response.status)
+      const response = await fetch(url, { signal: AbortSignal.timeout(12000) })
+      if (!response.ok) throw new Error('Search HTTP ' + response.status)
       const xml = await response.text()
-      const items = [...xml.matchAll(/<item>([\\s\\S]*?)<\\/item>/g)].slice(0,8).map(m=>{
-        const field = (key: string) => decode(m[1].match(new RegExp('<'+key+'>([\\s\\S]*?)<\\/'+key+'>'))?.[1] || '')
-        const link = field('link')
-        return {title:field('title').slice(0,180),url:link,summary:field('description').slice(0,350)}
-      }).filter(item=>/^https?:\\/\\//.test(item.url))
-      if (!items.length) throw new Error('No structured search results')
-      return {success:true,result:JSON.stringify({provider:'Bing RSS',query,results:items})}
-    } catch (err) {
+      const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 8).map(m => {
+        const field = (key: string) => decode(m[1].match(new RegExp('<' + key + '>([\\s\\S]*?)<\\/' + key + '>'))?.[1] || '')
+        return { title: field('title').slice(0, 180), url: field('link'), summary: field('description').slice(0, 350) }
+      }).filter(item => /^https?:\/\//.test(item.url))
+      if (!items.length) throw new Error('No search results')
+      return { success: true, result: JSON.stringify({ provider: 'Bing RSS', query, results: items }) }
+    } catch {
       try {
-        const url = 'https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch='+encodeURIComponent(query)+'&gsrlimit=6&prop=extracts&exintro=1&explaintext=1&exsentences=2&format=json&origin=*'
-        const response = await fetch(url,{signal:AbortSignal.timeout(10000)})
+        const url = 'https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(query) + '&gsrlimit=6&prop=extracts&exintro=1&explaintext=1&exsentences=2&format=json&origin=*'
+        const response = await fetch(url, { signal: AbortSignal.timeout(10000) })
         if (!response.ok) throw new Error('Wikipedia unavailable')
         const json = await response.json()
         const pages = Object.values(json.query?.pages || {}) as any[]
         if (!pages.length) throw new Error('No results')
-        return {success:true,result:JSON.stringify({provider:'Wikipedia fallback',query,results:pages.map(p=>({title:p.title,url:'https://en.wikipedia.org/?curid='+p.pageid,summary:(p.extract||'').slice(0,350)}))})}
-      } catch {return {success:false,error:'Structured search unavailable. Try search_web to open a search engine in the browser.'}}
+        return { success: true, result: JSON.stringify({ provider: 'Wikipedia fallback', query, results: pages.map(p => ({ title: p.title, url: 'https://en.wikipedia.org/?curid=' + p.pageid, summary: (p.extract || '').slice(0, 350) })) }) }
+      } catch {
+        return { success: false, error: 'Structured search unavailable. Try opening a search engine in the browser.' }
+      }
     }
   },
 
