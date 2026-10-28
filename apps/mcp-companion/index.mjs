@@ -6,7 +6,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import readline from 'node:readline'
 const rl = readline.createInterface({input:process.stdin,terminal:false})
 const sessions = new Map()
-const respond = (id, result, error) => process.stdout.write(JSON.stringify({id,...(error?{error:String(error)}:{result})})+'\\n')
+const respond = (id, result, error) => process.stdout.write(JSON.stringify({id,...(error?{error:String(error)}:{result})}) + String.fromCharCode(10))
 async function connect(name, config) {
   if (!/^[a-z0-9_-]{1,64}$/i.test(name)) throw Error('Invalid connection name')
   if (sessions.has(name)) throw Error('Connection already exists')
