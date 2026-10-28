@@ -1839,12 +1839,17 @@ async function runAgentLoop(objective, initialUserMessage) {
       await waitForChatResponse()
     }
    } catch (loopErr) {
-    // A single failing step must never abort the whole mission. Surface the
-    // REAL error (not a masked "AI service" message), record it, and let the
-    // loop re-observe + re-plan on the next iteration instead of throwing.
+    // Fatal AI configuration/provider failures must stop; re-observing the
+    // browser cannot fix credentials or an unavailable inference endpoint.
     const msg = (loopErr && loopErr.message) ? loopErr.message : String(loopErr)
     console.error('[runAgentLoop] step error:', loopErr)
     agentContext.lastError = msg
+    if (/AI planning unavailable|AI service not configured|add your NVIDIA API key|\b401\b|\b403\b|no valid browser action/i.test(msg)) {
+      addMessage('system', '🛑 Agent paused: ' + msg + '\\nOpen Settings, configure a working NVIDIA API key/model, then restart the task.')
+      scrollToBottom()
+      transition(AgentState.FAILED)
+      break
+    }
     addMessage('assistant', `⚠️ Step error (recovered): ${msg}. Re-observing…`)
     scrollToBottom()
     try { await executeAction({ type: 'observe', target: '', value: '' }) } catch {}
@@ -1873,6 +1878,12 @@ async function runAgentLoop(objective, initialUserMessage) {
     transition(AgentState.DONE)
   }
 
+  if (agentStopRequested || agentContext.lastError) {
+    addMessage('assistant', `⏹ Task ${agentStopRequested ? 'stopped' : 'incomplete'} — ${agentContext.steps} steps. ${agentContext.lastError || ''}`)
+    scrollToBottom()
+    transition(AgentState.IDLE)
+    return agentStopRequested ? 'stopped' : 'failed'
+  }
   const summary = `✅ **${objective}** — ${agentContext.steps} steps`
   addMessage('assistant', summary)
   scrollToBottom()
