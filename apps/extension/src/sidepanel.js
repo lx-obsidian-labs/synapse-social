@@ -1922,6 +1922,50 @@ $('memory-clear-2').addEventListener('click', async () => {
   await clearMemory()
 })
 
+
+// MCP connections: user-managed; every tool call requires explicit confirmation.
+async function mcpMessage(type,payload={}) {return chrome.runtime.sendMessage({type,payload})}
+function mcpStatus(message) {const el=document.getElementById('mcp-status');if(el)el.textContent=message}
+async function refreshMcpConnections() {
+  const root=document.getElementById('mcp-connections');if(!root)return;
+  const items=await mcpMessage('MCP_LIST_CONNECTIONS');root.replaceChildren();
+  if(!Array.isArray(items)){mcpStatus(items?.error||'Unable to load MCP connections');return}
+  if(!items.length){const p=document.createElement('p');p.textContent='No connected apps yet.';root.appendChild(p)}
+  for(const item of items){
+    const row=document.createElement('div');row.className='model-item';
+    const name=document.createElement('span');name.className='model-name';name.textContent=item.name;
+    const inspect=document.createElement('button');inspect.className='btn btn-secondary';inspect.textContent='Tools';inspect.addEventListener('click',()=>inspectMcpTools(item));
+    const remove=document.createElement('button');remove.className='btn btn-secondary';remove.textContent='Remove';remove.addEventListener('click',async()=>{if(!confirm('Disconnect '+item.name+'?'))return;await mcpMessage('MCP_REMOVE_CONNECTION',{id:item.id});refreshMcpConnections()});
+    row.append(name,inspect,remove);root.appendChild(row);
+  }
+}
+async function inspectMcpTools(connection) {
+  const root=document.getElementById('mcp-tools');root.replaceChildren();mcpStatus('Loading tools from '+connection.name+'…');
+  const response=await mcpMessage('MCP_LIST_TOOLS',{id:connection.id});
+  if(response?.error){mcpStatus(response.error);return}
+  const tools=Array.isArray(response?.tools)?response.tools:[];mcpStatus(tools.length+' tools available from '+connection.name);
+  for(const tool of tools){
+    const row=document.createElement('div');row.className='model-item';
+    const name=document.createElement('span');name.className='model-name';name.textContent=tool.name;
+    const run=document.createElement('button');run.className='btn btn-secondary';run.textContent='Run…';
+    run.addEventListener('click',async()=>{
+      const raw=prompt('JSON arguments for '+tool.name+' (check the tool schema first):','{}');if(raw===null)return;
+      let args;try{args=JSON.parse(raw);if(!args||Array.isArray(args)||typeof args!=='object')throw Error('Expected object')}catch(e){mcpStatus('Invalid JSON arguments');return}
+      if(!confirm('Allow '+connection.name+' to execute '+tool.name+' with these arguments?\\n'+JSON.stringify(args).slice(0,600)))return;
+      mcpStatus('Executing '+tool.name+'…');const result=await mcpMessage('MCP_CALL_TOOL',{id:connection.id,name:tool.name,args});
+      mcpStatus(result?.error||JSON.stringify(result).slice(0,2000));
+    });row.append(name,run);root.appendChild(row);
+  }
+}
+document.getElementById('mcp-add')?.addEventListener('click',async()=>{
+  const name=document.getElementById('mcp-name').value.trim();const url=document.getElementById('mcp-url').value.trim();const token=document.getElementById('mcp-token').value.trim();
+  try{const u=new URL(url);const origin=u.origin+'/*';const allowed=await chrome.permissions.request({origins:[origin]});if(!allowed){mcpStatus('Permission declined');return}
+    const result=await mcpMessage('MCP_SAVE_CONNECTION',{name,url,token});if(result?.error){mcpStatus(result.error);return}
+    document.getElementById('mcp-token').value='';mcpStatus('Connected '+name+'. Choose Tools to inspect capabilities.');await refreshMcpConnections();
+  }catch(e){mcpStatus('Connection setup failed: '+e.message)}
+});
+refreshMcpConnections().catch(e=>mcpStatus(String(e)));
+
 // --- Settings tab ---
 const SETTINGS_MODELS = [
   'meta/llama-3.1-8b-instruct',
