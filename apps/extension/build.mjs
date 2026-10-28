@@ -95,7 +95,7 @@ async function copyAssets() {
     cpSync(publicDir, distDir, { recursive: true })
   }
 
-  const assetsWithPlaceholders = ['sidepanel.html', 'popup.html', 'popup.js', 'sidepanel.js', 'shell.js', 'browser-flow.js']
+  const assetsWithPlaceholders = ['sidepanel.html', 'document.html', 'popup.html', 'popup.js', 'sidepanel.js', 'shell.js', 'browser-flow.js']
   for (const file of assetsWithPlaceholders) {
     const srcPath = resolve(srcDir, file)
     if (existsSync(srcPath)) {
