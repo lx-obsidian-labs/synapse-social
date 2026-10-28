@@ -52,7 +52,19 @@
   function confirmsSearch(rawUrl, query) {
     return normalizeQuery(searchQuery(rawUrl)) === normalizeQuery(query) && !!normalizeQuery(query);
   }
-  const api = Object.freeze({ providerOf, searchQuery, planSearchAction, confirmsSearch });
+  function researchReadiness(objective, notes) {
+    const requestedThree = /\b(three|3)\b/i.test(String(objective || ''));
+    const domains = new Set();
+    for (const note of (Array.isArray(notes) ? notes : [])) {
+      try {
+        const host = new URL(note.url).hostname;
+        if (host) domains.add(host.toLowerCase());
+      } catch {}
+    }
+    const required = requestedThree ? 3 : 1;
+    return { ready: domains.size >= required, sourceCount: domains.size, required };
+  }
+  const api = Object.freeze({ providerOf, searchQuery, planSearchAction, confirmsSearch, researchReadiness });
   root.SynapseBrowserFlow = api;
   if (typeof module === 'object' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
