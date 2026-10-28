@@ -17,9 +17,7 @@
     "downloads"
   ],
   "host_permissions": [
-    "<all_urls>",
-    "https://integrate.api.nvidia.com/*",
-    "https://*.supabase.co/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "background.js"
@@ -58,10 +56,5 @@
         "<all_urls>"
       ]
     }
-  ],
-  "optional_host_permissions": [
-    "https://*/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*"
   ]
 }
