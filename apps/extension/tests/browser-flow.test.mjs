@@ -80,3 +80,19 @@ test('Do not take control of ordinary non-playback YouTube research',()=>{
   const state={url:'https://www.youtube.com/watch?v=ABCDEFGHIJK',mediaPlayback:{playing:true,currentTime:1}}
   assert.equal(flow.videoActionForObjective('Read YouTube video description',state),null)
 })
+
+test('YouTube result selection never silently picks an unrelated artist',()=>{
+  const state={url:'https://www.youtube.com/results?search_query=Giveon',links:[
+    {text:'Different Artist - Official Music Video',href:'https://www.youtube.com/watch?v=ABCDEFGHIJK'}
+  ]}
+  const action=flow.videoActionForObjective('Open YouTube, search for Giveon popular songs, play a music video',state)
+  assert.equal(action,null)
+})
+test('YouTube prefers official videos even if an unofficial clip appears first',()=>{
+  const state={url:'https://www.youtube.com/results?search_query=Giveon',links:[
+    {text:'Giveon fan reaction clip',href:'https://www.youtube.com/watch?v=ABCDEFGHIJK'},
+    {text:'GIVĒON - Heartbreak Anniversary (Official Music Video)',href:'https://www.youtube.com/watch?v=ABCDEFGHIJL'}
+  ]}
+  const action=flow.videoActionForObjective('Open YouTube, search for Giveon popular songs, play a music video',state)
+  assert.equal(action.target,'https://www.youtube.com/watch?v=ABCDEFGHIJL')
+})
