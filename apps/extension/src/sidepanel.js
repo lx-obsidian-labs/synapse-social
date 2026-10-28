@@ -1570,6 +1570,7 @@ async function runAgentLoop(objective, initialUserMessage) {
   agentContext.objective = objective == null ? '' : (typeof objective === 'string' ? objective : String(objective))
   agentContext.steps = 0
   agentContext.playbackVerifyFailures = 0
+  agentContext.videoWaitSteps = 0
   agentContext.researchEvidence = []
   agentContext.plan = []
   agentContext.planDone = []
@@ -1731,6 +1732,19 @@ async function runAgentLoop(objective, initialUserMessage) {
     setHudAction('⟢ COMPUTING NEXT ACTION…')
     await sleep(PLAN_DELAY_MS)
     let action = await planNextAction(pageState, agentContext)
+
+    // Ads and a slow player can be waited through, but never for the entire
+    // sixty-step mission budget without an actionable explanation.
+    if (globalThis.SynapseBrowserFlow?.isPlaybackGoal(agentContext.objective) &&
+        globalThis.SynapseBrowserFlow.isYouTubeWatch(pageState.url)) {
+      agentContext.videoWaitSteps = action?.type === 'wait' ? agentContext.videoWaitSteps + 1 : 0
+      if (agentContext.videoWaitSteps > 30) {
+        addMessage('system', '⛔ YouTube player or advertisement did not finish loading within the waiting budget. Check the video page manually and retry.')
+        agentContext.lastError = 'Video could not be verified after waiting for playback.'
+        transition(AgentState.FAILED)
+        break
+      }
+    }
 
     if (!action) {
       transition(AgentState.DONE)
