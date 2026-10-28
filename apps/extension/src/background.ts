@@ -193,22 +193,15 @@ interface SynapseModel {
 }
 
 const MODELS: SynapseModel[] = [
-  // --- Primary tier: small/mid models reliably available on the NVIDIA NIM
-  // free/public tier. Try currently provisioned models first; individual
-  // availability depends on the account and NVIDIA model lifecycle.
-  { name: 'meta/llama-3.3-70b-instruct',          maxTokens: 8192, temperature: 0.7, topP: 0.95 },
-  // Vision-capable NIM models (used by the vision path). Smaller + more likely
-  // entitled than the giant MoE vision models.
-  { name: 'meta/llama-3.2-11b-vision-instruct',   maxTokens: 8192, temperature: 0.7, topP: 0.95, vision: true },
-  { name: 'meta/llama-3.2-90b-vision-instruct',   maxTokens: 8192, temperature: 0.7, topP: 0.95, vision: true },
-  // --- Last-resort fallbacks: huge MoE models. These require special
-  // entitlement on NVIDIA NIM and are slow; only reached if everything above
-  // fails. A 404/403 marks them permanently skipped for the session.
-  { name: 'nvidia/nemotron-3-ultra-550b-a55b', maxTokens: 8192, temperature: 1.0, topP: 0.95, thinking: true, reasoningBudget: 4096 },
-  { name: 'z-ai/glm-5.2',                maxTokens: 8192, temperature: 1.0, topP: 1.0, vision: true, stream: true, extraParams: { seed: 42 } },
-  { name: 'minimaxai/minimax-m3',          maxTokens: 8192, temperature: 1.0, topP: 0.95, vision: true, stream: false },
-  { name: 'qwen/qwen3.5-397b-a17b', maxTokens: 8192, temperature: 0.6, topP: 0.95, vision: true, stream: false, extraParams: { top_k: 20, presence_penalty: 0, repetition_penalty: 1 } },
-  { name: 'qwen/qwen3.5-122b-a10b',       maxTokens: 8192, temperature: 0.6, topP: 0.95, vision: true, stream: false },
+  // Free Endpoint models listed in NVIDIA's API catalog (October 2026).
+  // Actual access is account-specific; HTTP 400/403/404/410 skips a model.
+  // Compact agent model first to minimise browser action latency.
+  { name: 'nvidia/nemotron-3.5-bolt-e4b', maxTokens: 2048, temperature: 0.2, topP: 0.9 },
+  { name: 'nvidia/nemotron-3.5-lightning-30b-a3b', maxTokens: 2048, temperature: 0.2, topP: 0.9 },
+  { name: 'nvidia/nemotron-3-nano-30b-a3b', maxTokens: 2048, temperature: 0.2, topP: 0.9 },
+  { name: 'nvidia/nemotron-3-ultra-550b-a55b', maxTokens: 4096, temperature: 0.6, topP: 0.95, thinking: true, reasoningBudget: 1024 },
+  // Vision model: use only for screenshots, not ordinary page planning.
+  { name: 'nvidia/nemotron-3.5-super-vl-120b-a12b', maxTokens: 2048, temperature: 0.2, topP: 0.9, vision: true },
 ]
 
 async function nvidiaChat(
