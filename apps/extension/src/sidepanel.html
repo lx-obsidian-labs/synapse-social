@@ -1111,6 +1111,21 @@
 :root{--primary:#e87991;--primary-dark:#d65d78;--primary-glow:rgba(232,121,145,.16);--primary-light:rgba(232,121,145,.10);--bg:#0b0d11;--bg-gradient:none;--surface:#12151b;--surface-2:#171b22;--surface-3:#1c2129;--border:#292e37;--border-strong:#353c46;--header-bg:#0b0d11;--glass-bg:#12151b;--glass-border:#292e37;--glass-shadow:none;--text:#f0f2f5;--text-secondary:#a8b0bd;--text-tertiary:#7f8997;--msg-user-bg:#b95170;--msg-assistant-bg:#151920;--input-bg:#101319;--radius:8px;--radius-sm:5px;--radius-lg:10px;--font:'Inter',system-ui,sans-serif}
 body{background:var(--bg)!important;background-image:none!important;font-family:var(--font);font-size:13px;letter-spacing:-.005em}body.light{--primary:#ba365e;--primary-dark:#9c2649;--primary-light:#fce9ef;--primary-glow:rgba(186,54,94,.12);--bg:#f6f7f9;--bg-gradient:none;--surface:#fff;--surface-2:#f2f4f7;--surface-3:#e9edf2;--border:#dce1e8;--border-strong:#c9d1db;--header-bg:#fff;--glass-bg:#fff;--text:#171b23;--text-secondary:#536071;--text-tertiary:#697689;--msg-user-bg:#b95170;--msg-assistant-bg:#fff;--input-bg:#fff}
 .tabs{display:flex;overflow-x:auto;overflow-y:hidden;flex-shrink:0;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;gap:2px;padding:7px 9px!important;background:var(--header-bg);border-bottom:1px solid var(--border);scroll-snap-type:x proximity}.tabs .tab{flex:0 0 auto!important;min-width:66px!important;padding:10px 12px!important;border-radius:5px!important;border:1px solid transparent!important;font-size:11px!important;font-weight:600!important;white-space:nowrap;scroll-snap-align:start;transition:background .15s,color .15s}.tabs .tab.active{background:var(--surface-2)!important;color:var(--text)!important;border-color:var(--border)!important;box-shadow:none!important}.tabs .tab:hover{background:var(--surface-2)}.tab-icon{filter:none!important}.content{min-height:0}.tab-content{min-height:0}.settings-scroll{padding:20px 16px 28px!important;gap:14px!important}.settings-card{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:8px!important;box-shadow:none!important;padding:17px!important}.settings-title{font-size:13px!important;font-weight:650!important;letter-spacing:-.01em}.settings-sub{font-size:11.5px!important;line-height:1.65!important;color:var(--text-secondary)!important}.set-row{gap:8px!important;flex-wrap:wrap}.set-row input,.set-row select,.settings-card input{min-width:0;max-width:100%;background:var(--input-bg)!important;color:var(--text)!important;border:1px solid var(--border-strong)!important;border-radius:5px!important;outline-offset:2px}.set-row input:focus,.settings-card input:focus{border-color:var(--primary)!important;outline:2px solid var(--primary-light)}.btn{border-radius:5px!important;box-shadow:none!important;transition:background .15s,border-color .15s!important}.btn-primary{background:var(--primary)!important;color:#101115!important}.btn-primary:hover{background:#f1a1b4!important}.btn-secondary{background:var(--surface-2)!important;color:var(--text)!important;border:1px solid var(--border-strong)!important}.chat-header{border-bottom:1px solid var(--border)!important}.chat-header .avatar{background:var(--surface-2)!important;color:var(--primary)!important;border:1px solid var(--border-strong)!important}.app-footer{background:var(--header-bg)!important;border-top:1px solid var(--border)!important}.agent-hud{box-shadow:none!important;border-radius:8px!important}.hud-scan,.bot-eye,.hud-signal{animation:none!important}#mcp-settings .set-row{margin:10px 0}#mcp-settings #mcp-url{flex:1 1 100%;width:100%}#mcp-settings #mcp-name{width:100%}#mcp-settings #mcp-token{flex:1 1 170px}#mcp-connections .model-item,#mcp-tools .model-item{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:10px 2px;border-bottom:1px solid var(--border)}#mcp-connections .model-name,#mcp-tools .model-name{flex:1 1 125px;overflow-wrap:anywhere}#mcp-connections .btn,#mcp-tools .btn{padding:7px 10px!important;font-size:11px!important}#mcp-status{overflow-wrap:anywhere;line-height:1.6}button:focus-visible,a:focus-visible{outline:2px solid var(--primary)!important;outline-offset:2px}@media(max-width:380px){.tabs .tab{min-width:61px!important;padding:9px 10px!important}.settings-scroll{padding:14px 11px 24px!important}.settings-card{padding:14px!important}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Simplified work-first interface; retain DOM hooks for existing features */
+.page-bar{padding:7px 14px!important;min-height:0!important;background:var(--bg)!important;border-bottom:1px solid var(--border)!important}
+.page-bar .label{display:none!important}.page-bar .value{font-family:var(--font)!important;font-size:11px!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-header{padding:10px 15px!important;min-height:0!important}.chat-header .avatar{width:27px!important;height:27px!important;font-size:12px!important}.chat-header .name{font-size:12px!important}.chat-header .sub{font-size:10px!important}
+.chat-input-area{padding:12px!important;background:var(--bg)!important;border-top:1px solid var(--border)!important}
+.chat-input-area .input-wrap{border-radius:8px!important;background:var(--surface)!important;border:1px solid var(--border-strong)!important;box-shadow:none!important}
+.chat-input-area .input-wrap:focus-within{border-color:var(--primary)!important;box-shadow:0 0 0 2px var(--primary-light)!important}
+.chat-input-area .input-wrap input{font-family:var(--font)!important;font-size:12px!important;min-width:0}
+.chat-input-area .input-wrap .enhance-btn{font-size:10px!important;padding:7px 9px!important;border-radius:5px!important;white-space:nowrap}
+.chat-input-area .input-wrap button#chat-send{border-radius:5px!important;box-shadow:none!important;transform:none!important}
+.messages{padding:14px!important}.msg-bubble{max-width:100%;overflow-wrap:anywhere;line-height:1.65!important}
+.agent-hud .hud-scan,.agent-hud .hud-bot,.agent-hud .hud-signal,.agent-hud .hud-eq{display:none!important}
+.agent-hud{margin:10px 12px!important;padding:11px!important;background:var(--surface)!important;border:1px solid var(--border)!important}
+.agent-hud .hud-state{text-shadow:none!important;letter-spacing:.04em!important}.agent-hud .hud-readout{min-width:0;flex:1}
 </style>
 </head>
 <body>
@@ -1136,10 +1151,10 @@ body{background:var(--bg)!important;background-image:none!important;font-family:
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab active" data-tab="chat"><span class="tab-icon">💬</span>Chat</button>
-    <button class="tab" data-tab="generate"><span class="tab-icon">✨</span>Generate</button>
-    <button class="tab" data-tab="content"><span class="tab-icon">🎨</span>Content</button>
+    <button class="tab" data-tab="generate"><span class="tab-icon">✨</span>Create</button>
+    <button class="tab" data-tab="content"><span class="tab-icon">🎨</span>Library</button>
     <button class="tab" data-tab="tools"><span class="tab-icon">🛠️</span>Tools</button>
-    <button class="tab" data-tab="memory"><span class="tab-icon">🧠</span>Memory</button>
+    <button class="tab" data-tab="memory"><span class="tab-icon">🧠</span>History</button>
     <button class="tab" data-tab="settings"><span class="tab-icon">⚙️</span>Settings</button>
   </div>
 
@@ -1150,7 +1165,7 @@ body{background:var(--bg)!important;background-image:none!important;font-family:
     <div class="tab-content active" id="tab-chat">
       <div class="chat-header">
         <div class="avatar">S</div>
-        <div>        <div class="name">Synapse AI</div><div class="sub">Universal browser agent — manage any site</div></div>
+        <div>        <div class="name">Synapse AI</div><div class="sub">Browser tasks and connected apps</div></div>
       </div>
 
       <!-- Technical Agent HUD -->
@@ -1191,7 +1206,7 @@ body{background:var(--bg)!important;background-image:none!important;font-family:
       <div class="messages" id="chat-messages">
         <div class="msg assistant">
           <div class="msg-avatar">S</div>
-          <div class="msg-bubble">Hi! I'm Synapse — your universal browser AI. I can navigate, fill forms, click, extract data, and automate ANY website. Need to set up Supabase, deploy on Vercel, configure Cloudflare, research topics, manage social media, or automate multi-step workflows? Just tell me what you want to do.</div>
+          <div class="msg-bubble">What would you like to do? I can automate browser tasks and work with connected apps.</div>
         </div>
       </div>
       <div class="suggestions" id="suggestions">
@@ -1212,8 +1227,8 @@ body{background:var(--bg)!important;background-image:none!important;font-family:
       </div>
       <div class="chat-input-area">
         <div class="input-wrap">
-          <input type="text" id="chat-input" placeholder="Ask Synapse anything..." />
-          <button id="chat-enhance" class="enhance-btn" title="Enhance your prompt into a reliable, detailed instruction">✨ Enhance</button>
+          <input type="text" id="chat-input" placeholder="Describe a task for Synapse…" />
+          <button id="chat-enhance" class="enhance-btn" title="Enhance your prompt into a reliable, detailed instruction">Refine</button>
           <button id="chat-send">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
