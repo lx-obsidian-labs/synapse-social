@@ -538,6 +538,7 @@ function compactPageState(s) {
     loading: !!s.loading,
     streaming: !!s.streaming,
     text: (s.textSummary || '').slice(0, 2800),
+    accessibilitySnapshot: (s.accessibilitySnapshot || '').slice(0, 4800),
     inputs: take(s.inputs, 8).map(i => ({
       ph: i.placeholder || i.label || '',
       role: i.role || '',
@@ -975,6 +976,8 @@ async function planNextAction(pageState, context) {
       /giveon|givēon/i.test(String(x.text || x.title || x.label || '')))
     if (video) return { type: 'navigate', target: String(video.href || video.url), value: '' }
   }
+  // The browser observation includes fresh, snapshot-scoped element refs.
+  // Prefer refs for grounded clicks, never invent or reuse stale refs.
   const prompt = await buildActionPrompt(pageState, context)
   const t0 = performance.now()
   const response = await sendToBackground('AI_CHAT', {
