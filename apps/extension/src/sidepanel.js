@@ -1015,16 +1015,10 @@ ${PLATFORM_GUIDE}
 }
 
 async function planNextAction(pageState, context) {
-  // Deterministic fast path: a search result already has the destination URL.
-  // Avoid another LLM round-trip for a routine YouTube video selection.
-  if (/youtube\\.com/i.test(pageState?.url || '') &&
-      /\\b(play|listen|watch)\\b/i.test(context?.objective || '') &&
-      /[?&]search_query=/.test(pageState?.url || '')) {
-    const links = Array.isArray(pageState.links) ? pageState.links : []
-    const video = links.find(x => /\/watch\?v=/.test(String(x.href || x.url || '')) &&
-      /giveon|givēon/i.test(String(x.text || x.title || x.label || '')))
-    if (video) return { type: 'navigate', target: String(video.href || video.url), value: '' }
-  }
+  // On a YouTube playback mission, use real page state rather than asking the
+  // model to search again after a video has already been opened.
+  const videoAction = globalThis.SynapseBrowserFlow?.videoActionForObjective(context?.objective, pageState)
+  if (videoAction) return videoAction
   // The browser observation includes fresh, snapshot-scoped element refs.
   // Prefer refs for grounded clicks, never invent or reuse stale refs.
   const prompt = await buildActionPrompt(pageState, context)
@@ -1090,6 +1084,8 @@ async function executeAction(action) {
       }
       return sendToBackground('TOOL_EXECUTE', { tool: 'find_and_click', args: [action.target] }, TOOL_TIMEOUT)
     }
+    case 'media':
+      return sendToBackground('TOOL_EXECUTE', { tool: 'ensure_media_playing', args: [] }, TOOL_TIMEOUT)
     case 'type': {
       // Deterministic browser actions before AI retry logic: Google/YouTube
       // search is a navigation with observable query parameters, not a fake
@@ -1303,19 +1299,18 @@ async function verifyObjective(pageState, context) {
     }
   }
 
-  // Video autoplay may be blocked. Checking the watch URL alone would be a
-  // false success; require observed media to be playing and advancing.
-  if (/youtube\.com/i.test(pageState.url || '') &&
-      /\b(play|playback|listen|watch)\b/i.test(context.objective || '') &&
-      /\/watch\?v=/.test(pageState.url || '')) {
+  // A watch page is not proof that playback has started. The media clock must
+  // advance between two uncached observations, without an LLM judge.
+  if (globalThis.SynapseBrowserFlow?.isPlaybackGoal(context.objective) &&
+      globalThis.SynapseBrowserFlow.isYouTubeWatch(pageState.url)) {
     const first = pageState.mediaPlayback
-    if (!first?.playing) return { complete: false, confidence: 1, reason: 'Video has not started playback (paused or not ready).' }
-    await sleep(900)
-    const second = (await observePage()).mediaPlayback
-    if (second?.playing && second.currentTime > first.currentTime + 0.2) {
-      return { complete: true, confidence: 1, reason: 'Playback time is advancing.' }
+    if (!first?.playing) return { complete: false, confidence: 1, reason: 'Video is paused, blocked or not ready.' }
+    await sleep(1100)
+    const later = await observePage()
+    if (globalThis.SynapseBrowserFlow.hasAdvancedPlayback(first, later.mediaPlayback)) {
+      return { complete: true, confidence: 1, reason: 'Video playback was confirmed by its advancing playback clock.' }
     }
-    return { complete: false, confidence: 1, reason: 'Video playback has not advanced; try clicking Play.' }
+    return { complete: false, confidence: 1, reason: 'Player time did not advance. Playback may be stalled.' }
   }
 
   const prompt = `You are a strict evaluator. Decide if the user's objective is COMPLETE from the current page state.
@@ -1572,6 +1567,7 @@ async function runAgentLoop(objective, initialUserMessage) {
   // Normalize objective to a string so downstream .toLowerCase()/template use never throws.
   agentContext.objective = objective == null ? '' : (typeof objective === 'string' ? objective : String(objective))
   agentContext.steps = 0
+  agentContext.playbackVerifyFailures = 0
   agentContext.researchEvidence = []
   agentContext.plan = []
   agentContext.planDone = []
@@ -1900,9 +1896,11 @@ async function runAgentLoop(objective, initialUserMessage) {
     }
 
     if (action.type === 'done') {
+      const videoGoal = globalThis.SynapseBrowserFlow?.isPlaybackGoal(agentContext.objective) &&
+        globalThis.SynapseBrowserFlow.isYouTubeWatch(pageState.url)
       // Reflect BEFORE finalizing — catches ambiguity and lets the agent ask the
       // user for clarification instead of declaring false completion.
-      try {
+      if (!videoGoal) try {
         const r = await reflectProgress(agentContext, pageState)
         if (r.status === 'ask_user' && r.question) {
           addMessage('assistant', `❓ I need clarification before I can finish: ${r.question}`)
@@ -1913,6 +1911,8 @@ async function runAgentLoop(objective, initialUserMessage) {
       } catch {}
       const verdict = await verifyObjective(pageState, agentContext)
       if (verdict.complete && verdict.confidence >= 0.5) {
+        agentContext.lastError = null
+        if (videoGoal) addMessage('assistant', '▶ Playback confirmed: the YouTube video is playing and its timer is advancing.')
         if (isResearchMission(agentContext.objective)) {
           const answer = await synthesizeResearchAnswer(agentContext.objective)
           if (!answer) {
@@ -1924,6 +1924,12 @@ async function runAgentLoop(objective, initialUserMessage) {
           scrollToBottom()
         }
         transition(AgentState.DONE)
+        break
+      }
+      if (videoGoal && ++agentContext.playbackVerifyFailures >= 3) {
+        addMessage('system', '⛔ Playback could not be verified after three observations. If the video is paused or blocked, click Play manually and retry.')
+        agentContext.lastError = verdict.reason
+        transition(AgentState.FAILED)
         break
       }
       addMessage('assistant', `🔍 Objective not complete yet (${Math.round(verdict.confidence * 100)}%): ${verdict.reason}. Continuing…`)
