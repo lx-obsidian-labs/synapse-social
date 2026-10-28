@@ -1,3 +1,4 @@
+import { listConnections, saveConnection, removeConnection, listTools, callTool } from './mcp'
 // --- Types ---
 
 interface SynapseMessage {
@@ -15,6 +16,11 @@ interface SynapseMessage {
     | 'AI_GENERATE'
     | 'TOOL_EXECUTE'
     | 'BROWSER_TOOL'
+    | 'MCP_LIST_CONNECTIONS'
+    | 'MCP_SAVE_CONNECTION'
+    | 'MCP_REMOVE_CONNECTION'
+    | 'MCP_LIST_TOOLS'
+    | 'MCP_CALL_TOOL'
   payload?: any
 }
 
@@ -913,6 +919,23 @@ chrome.runtime.onMessage.addListener(
         return true
       }
 
+      case 'MCP_LIST_CONNECTIONS':
+        listConnections().then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
+      case 'MCP_SAVE_CONNECTION':
+        saveConnection(message.payload || {}).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
+      case 'MCP_REMOVE_CONNECTION':
+        removeConnection(String(message.payload?.id || '')).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
+      case 'MCP_LIST_TOOLS':
+        listTools(String(message.payload?.id || '')).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
+      case 'MCP_CALL_TOOL':
+        // Calls are intentionally UI-only and require explicit confirmation in the side panel.
+        if (sender.url && !sender.url.startsWith(chrome.runtime.getURL(''))) {sendResponse({error:'MCP calls must originate from Synapse UI'});return}
+        callTool(String(message.payload?.id || ''),String(message.payload?.name || ''),message.payload?.args || {}).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
       case 'BROWSER_TOOL': {
         const { tool, args } = message.payload || {}
         handleBrowserTool(tool || '', args || []).then(sendResponse)
