@@ -9,7 +9,7 @@
 (function (root) {
   'use strict';
   const HOSTS = {
-    google: /(^|\.)google\.[a-z.]+$/i,
+    google: /^(?:www\.)?google\.(?:[a-z]{2,3}|(?:com|co|org|net)\.[a-z]{2})$/i,
     youtube: /(^|\.)youtube\.com$/i,
     bing: /(^|\.)bing\.com$/i,
     duckduckgo: /(^|\.)duckduckgo\.com$/i
