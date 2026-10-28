@@ -835,6 +835,26 @@ const tools: Record<string, ToolFn> = {
       }
     })
 
+    // Surface actual search-result links ahead of headers, menus, and footers.
+    // Grounding official-site research requires result URLs in the observation.
+    if (/(^|\.)google\./.test(location.hostname) && location.pathname === '/search') {
+      const results = Array.from(document.querySelectorAll<HTMLAnchorElement>('#search a[href]'))
+        .filter(a => a.querySelector('h3') && /^https?:/.test(a.href))
+        .map(a => ({ text: (a.querySelector('h3')?.textContent || '').trim().slice(0, 120), href: a.href.slice(0, 400) }))
+      const seen = new Set<string>()
+      const ordered = [...results, ...links].filter(item => {
+        if (!item.text || seen.has(item.href)) return false
+        seen.add(item.href); return true
+      })
+      links.splice(0, links.length, ...ordered)
+    }
+    if (/(^|\.)youtube\.com$/.test(location.hostname) && location.pathname === '/results') {
+      const videos = Array.from(document.querySelectorAll<HTMLAnchorElement>('ytd-video-renderer a#video-title[href], ytd-rich-item-renderer a#video-title-link[href]'))
+        .map(a => ({ text: (a.textContent || a.getAttribute('title') || '').trim().slice(0, 120), href: a.href.slice(0, 400) }))
+        .filter(x => /\/watch\?v=/.test(x.href) && !!x.text)
+      links.splice(0, links.length, ...videos, ...links.filter(x => !videos.some(v => v.href === x.href)))
+    }
+
     // --- Headings ---
     document.querySelectorAll('h1, h2, h3, h4').forEach((h) => {
       const text = h.textContent?.trim()
@@ -897,7 +917,7 @@ const tools: Record<string, ToolFn> = {
         accessibilitySnapshot: groundedSnapshot(sig),
         inputs: inputs.slice(0, 12),
         buttons: buttons.slice(0, 20),
-        links: links.slice(0, 12),
+        links: links.slice(0, 20),
         headings: headings.slice(0, 8),
         selects: selects.slice(0, 6),
         dialogs: dialogs.slice(0, 3),
@@ -908,6 +928,11 @@ const tools: Record<string, ToolFn> = {
           links: links.length,
           selects: selects.length,
         },
+        mediaPlayback: (() => {
+          const video = document.querySelector<HTMLVideoElement>('video')
+          if (!video) return null
+          return { playing: !video.paused && !video.ended && video.readyState >= 2, currentTime: Math.round(video.currentTime * 10) / 10, readyState: video.readyState, ended: video.ended }
+        })(),
         imgCount,
       }),
     }
