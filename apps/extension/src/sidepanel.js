@@ -539,6 +539,7 @@ function compactPageState(s) {
     streaming: !!s.streaming,
     text: (s.textSummary || '').slice(0, 2800),
     accessibilitySnapshot: (s.accessibilitySnapshot || '').slice(0, 4800),
+    mediaPlayback: s.mediaPlayback || null,
     inputs: take(s.inputs, 8).map(i => ({
       ph: i.placeholder || i.label || '',
       role: i.role || '',
@@ -1041,11 +1042,30 @@ async function executeAction(action) {
       }
       return sendToBackground('TOOL_EXECUTE', { tool: 'find_and_click', args: [action.target] }, TOOL_TIMEOUT)
     }
-    case 'type':
+    case 'type': {
+      // Deterministic browser actions before AI retry logic: Google/YouTube
+      // search is a navigation with observable query parameters, not a fake
+      // Enter event. Inspired by OpenBrowser's deterministic executor.
+      const route = globalThis.SynapseBrowserFlow?.planSearchAction(action, agentContext.url)
+      if (route?.status === 'already-submitted') {
+        return { success: false, error: 'Search results for "' + route.query + '" are already open. Select a result; do not retype the query.' }
+      }
+      if (route?.status === 'navigate') {
+        const response = await sendToBackground('BROWSER_TOOL', { tool: 'navigate_to', args: [route.action.target] }, 35000)
+        if (!response?.success) return response
+        let observed = null
+        for (let attempt = 0; attempt < 4; attempt++) {
+          observed = await observePage()
+          if (globalThis.SynapseBrowserFlow.confirmsSearch(observed.url, route.query)) {
+            return { success: true, result: 'Search submitted and result URL verified: ' + observed.url }
+          }
+          await sleep(350)
+        }
+        return { success: false, error: 'Search navigation not verified. Current page: ' + (observed?.url || 'unavailable') }
+      }
       if (isOnChatSite(agentContext.url)) agentContext.chatTurns = (agentContext.chatTurns || 0) + 1
-      // Long pastes (e.g. a full mission brief) need more than the default tool
-      // timeout, or fill_input is cut off mid-type. Give typing generous headroom.
       return sendToBackground('TOOL_EXECUTE', { tool: 'fill_input', args: [action.target, action.value] }, 400000)
+    }
     case 'navigate': {
       const ctx = detectChatContext(lastObservedState, agentContext)
       const th = targetHost(action.target)
@@ -1480,6 +1500,9 @@ async function runAgentLoop(objective, initialUserMessage) {
   // Normalize objective to a string so downstream .toLowerCase()/template use never throws.
   agentContext.objective = objective == null ? '' : (typeof objective === 'string' ? objective : String(objective))
   agentContext.steps = 0
+  actionHistory = []
+  failedActions.clear()
+  consecutiveFailures = 0
   agentContext.lastError = null
   agentContext.completedTasks = []
   agentContext.chatTurns = 0
@@ -1643,6 +1666,25 @@ async function runAgentLoop(objective, initialUserMessage) {
       break
     }
 
+    // A successful search must move to reading or opening results. Replanning
+    // once with explicit state evidence prevents re-enter/Enter loops.
+    const searchRoute = globalThis.SynapseBrowserFlow?.planSearchAction(action, pageState.url)
+    if (searchRoute?.status === 'already-submitted') {
+      addMessage('system', '✓ Search results are already loaded. Selecting the next evidence-gathering action.')
+      const correction = await planNextAction(pageState, {
+        ...agentContext,
+        lastError: 'The query "' + searchRoute.query + '" is ALREADY SUBMITTED (visible in URL). Never type it or press Enter again. Your next action MUST open a relevant result link, extract evidence, or navigate to an official website.'
+      })
+      const secondRoute = globalThis.SynapseBrowserFlow?.planSearchAction(correction, pageState.url)
+      if (!correction || secondRoute?.status === 'already-submitted' ||
+          (correction.type === 'key' && /^enter$/i.test(String(correction.target || '')))) {
+        addMessage('system', '⛔ Planner is repeating an already-submitted search. Stopped without wasting more API calls.')
+        transition(AgentState.FAILED)
+        break
+      }
+      action = correction
+    }
+
     // Guard against model decisions that repeat a completed action without
     // any evidence of progress. In particular, typing the same query again
     // does not submit a search or advance the objective.
@@ -1652,10 +1694,7 @@ async function runAgentLoop(objective, initialUserMessage) {
       String(x.target || '').toLowerCase() === String(action.target || '').toLowerCase() &&
       String(x.value || '') === String(action.value || '')
     )) {
-      if (action.type === 'type' && /search|query/i.test(String(action.target || ''))) {
-        action = { type: 'key', target: 'Enter', value: '' }
-        addMessage('system', '↪ Repeated search entry detected — submitting instead of typing again.')
-      } else if (['extract', 'observe', 'wait', 'scroll', 'type'].includes(action.type)) {
+      if (['extract', 'observe', 'wait', 'scroll', 'type'].includes(action.type)) {
         agentContext.lastError = 'No progress: repeated ' + action.type + ' without a new outcome.'
         addMessage('system', '⛔ Stopped an unproductive action loop: ' + action.type + '.')
         transition(AgentState.FAILED)
@@ -1831,8 +1870,7 @@ async function runAgentLoop(objective, initialUserMessage) {
       agentContext.lastError = `"${stepLabel}" failed: ${result.error}.`
       if (msgEl) msgEl.textContent = `[${stepNum}/${agentContext.maxSteps}] ❌ ${stepLabel}${tag} — ${result.error}`
         pushHudLog('EXEC', stepLabel + ' ✗ ' + (result.error || ''), 'err')
-      consecutiveFailures++
-
+      // recordAction already increments the failure counter.
       // JavaScript runtime errors are deterministic: retrying the same DOM
       // operation with a different model prompt cannot repair the executor.
       if (/Illegal invocation|TypeError:|SyntaxError:|ReferenceError:/i.test(String(result.error || ''))) {
