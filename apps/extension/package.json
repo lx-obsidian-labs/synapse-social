@@ -5,11 +5,10 @@
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
-    "zip": "npm run build && cd dist && npx --no-install bestzip ../synapse-ai-v1.2.0-test.zip *"
+    "zip": "npm run build && python3 package.py"
   },
   "devDependencies": {
     "esbuild": "^0.20.2",
-    "typescript": "^5.9.3",
-    "bestzip": "^2.2.1"
+    "typescript": "^5.9.3"
   }
 }
