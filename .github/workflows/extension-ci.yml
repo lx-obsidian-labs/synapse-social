@@ -28,6 +28,8 @@ jobs:
           node --version
           npm --version
           python3 --version
+      - name: Run deterministic browser-flow tests
+        run: npm test
       - name: Build and package extension
         run: npm run zip
       - name: Validate package
