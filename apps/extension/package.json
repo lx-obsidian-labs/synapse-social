@@ -5,7 +5,8 @@
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
-    "zip": "npm run build && python3 package.py"
+    "zip": "npm run build && python3 package.py",
+    "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.20.2",
