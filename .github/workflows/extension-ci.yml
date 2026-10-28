@@ -1,0 +1,31 @@
+name: Synapse Extension CI
+on:
+  push:
+    paths:
+      - 'apps/extension/**'
+      - '.github/workflows/extension-ci.yml'
+  pull_request:
+    paths:
+      - 'apps/extension/**'
+      - '.github/workflows/extension-ci.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - name: Validate package
+        run: |
+          node -e "const fs=require('fs');const p='dist/manifest.json';const m=JSON.parse(fs.readFileSync(p));for(const x of ['background.js','content.js','sidepanel.js','popup.js','sidepanel.html','popup.html'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!=='1.2.0')throw Error('Version mismatch')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synapse-extension-unpacked
+          path: apps/extension/dist/
+          retention-days: 7
