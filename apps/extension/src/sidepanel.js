@@ -973,7 +973,7 @@ async function planNextAction(pageState, context) {
   const dt = performance.now() - t0
   if (response.model) setHudModel(response.model)
   setHudLatency(dt)
-  if (!response.success) { pushHudLog('PLAN', response.error || 'failed', 'err'); return { type: 'observe', target: '', value: '' } }
+  if (!response.success) { const reason = response.error || 'AI request failed'; pushHudLog('PLAN', reason, 'err'); throw new Error('AI planning unavailable: ' + reason) }
   pushHudLog('PLAN', 'decision @ ' + Math.round(dt) + 'ms', 'ok')
   const action = parseAction(response.content)
   return action || { type: 'observe', target: '', value: '' }
@@ -1557,6 +1557,18 @@ async function runAgentLoop(objective, initialUserMessage) {
     // instead of spinning, and tell the user to reload the tab.
     if (Array.isArray(pageState.errors) && /context invalidated/i.test(pageState.errors.join(' '))) {
       addMessage('system', '🔌 Extension context was reloaded. Reload this tab (and reopen the side panel) to reconnect, then re-run the mission.')
+      scrollToBottom()
+      transition(AgentState.FAILED)
+      break
+    }
+    // A failed observation is not an empty page. Stop instead of retrying forever.
+    if (Array.isArray(pageState.errors) && pageState.errors.length) {
+      const reason = pageState.errors.filter(Boolean).join('; ')
+      const hint = /not active|not responding|cannot access|cannot be scripted|receiving end/i.test(reason)
+        ? 'Open a normal https:// webpage and refresh it. Chrome internal pages, the Web Store, and some PDF viewers cannot be controlled by extensions.'
+        : 'Check the active tab and extension permissions, then retry.'
+      pushHudLog('OBSERVE', reason, 'err')
+      addMessage('system', '⚠️ Browser connection unavailable: ' + reason + '\\n' + hint)
       scrollToBottom()
       transition(AgentState.FAILED)
       break
