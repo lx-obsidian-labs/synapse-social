@@ -1,49 +1,57 @@
 # Synapse Social
 
-An AI-powered browser extension for Facebook Page management.
+**Social media automation and management tooling | LX Obsidian Labs**
 
-## Overview
+**Stage:** To confirm from current implementation and releases.  
+**Verification:** Monorepo manifest and documentation reviewed; individual features, browser-extension permissions and production integrations not independently tested.
 
-Synapse Social combines browser automation, AI content generation, community management, analytics intelligence, competitor analysis, and workflow automation into a single browser extension.
+## Purpose and scope
 
-## Architecture
+Synapse Social explores a web application and browser-extension workflow for social media management, AI assistance and automation. The repository's existing product roadmap mentions Facebook Page management, analytics and content generation. **Roadmap features are not automatically implemented features.**
 
-- **Frontend**: Next.js with TypeScript, TailwindCSS, shadcn/ui
-- **Backend**: NestJS (planned for future phases)
-- **Extension**: Chrome Extension MV3
-- **AI**: NVIDIA NIM with Nemotron, Llama, VILA models
+## Repository structure
 
-## Development
+The checked-in root manifest declares a pnpm workspace with `apps/`, `docs/`, `scripts/` and `supabase/` directories. Inspect each workspace package for actual runtime requirements and extension capabilities.
+
+## Local development
+
+Install a compatible Node.js runtime and pnpm, then run:
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-## Structure
+Root scripts available for verification:
 
-```
-/apps/
-  web/          # Next.js frontend
-  extension/    # Chrome extension
-
-/packages/
-  ui/           # UI components (shadcn/ui)
-  types/        # TypeScript types
-  api-client/   # API client
-  shared/       # Shared utilities
-
-/workers/
-  facebook-parser/  # Facebook DOM parsing
-  analytics/        # Analytics processing
-  automation/       # Automation workflows
+```bash
+pnpm build
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:extension
 ```
 
-## Phases
+These commands are defined in the root manifest; **passing results have not been established in this review**.
 
-1. **UI Prototype** (2 weeks) - All pages, navigation, responsive design
-2. **Extension Infrastructure** (1 week) - Manifest, content scripts, side panel
-3. **Backend** (2 weeks) - Auth, database, API
-4. **AI Integration** (2 weeks) - Content generation, chat assistant
-5. **Facebook Intelligence** (2 weeks) - Analytics and comment parsing
-6. **Beta Release** (1 week) - Testing and optimization
+## Architecture and security review
+
+- **Web:** Check authentication, data access, authorization and error states.
+- **Browser extension:** Inspect Manifest V3 permissions, content scripts, message validation and host access before distribution.
+- **AI integration:** Verify provider configuration, request limits, user consent and treatment of generated content.
+- **Social platform access:** Confirm compliance with applicable platform policies and authorization boundaries. Never imply official platform endorsement.
+- **Supabase:** Review schema migrations, row-level security and credential separation.
+- **Privacy:** Document data collected from accounts/pages, retention and deletion behavior.
+- **Testing:** Capture reproducible build, lint, typecheck and test results per package.
+
+## Delivery milestones
+
+1. Produce a source-backed feature matrix (implemented / experimental / planned).
+2. Test the extension against supported browser versions using a dedicated test account.
+3. Verify API permissions and social platform compliance.
+4. Document screenshots, installation, release packaging and rollback.
+5. Publish a case study only for demonstrated behavior and independently attributable work.
+
+## Maintainer
+
+**LX Obsidian Labs** · [Engineering portfolio](https://github.com/lx-obsidian-labs/lx-obsidian-labs) · [Contact](mailto:vilanenathan@gmail.com)
