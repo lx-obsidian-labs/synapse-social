@@ -47,6 +47,9 @@ export async function saveConnection(data: Partial<McpConnection>) {
   const list = await allConnections();
   if (list.length >= 12 && !list.some(c=>c.id===data.id)) throw new Error('Maximum 12 servers');
   const id = data.id && /^[\w.:-]{1,80}$/.test(data.id) ? data.id : crypto.randomUUID();
+  sessions.delete(id);
+  initialized.delete(id);
+  versions.delete(id);
   const next = list.filter(c=>c.id!==id);
   next.push({id,name,url,token:String(data.token || '').trim().slice(0,2048),...(data.preset?{preset:String(data.preset).slice(0,40)}:{})});
   await chrome.storage.local.set({[STORE]:next});
@@ -55,48 +58,64 @@ export async function saveConnection(data: Partial<McpConnection>) {
 export function enablePreset(presetId: string, token = '') {
   const preset = MCP_PRESETS.find(p=>p.id===presetId);
   if (!preset) throw new Error('Unknown built-in integration');
+  if (preset.tokenRequired && !token.trim()) throw new Error(preset.name + ' requires an access token');
   return saveConnection({id:PRESET_PREFIX+preset.id,name:preset.name,url:preset.url,token,preset:preset.id});
 }
 export function disablePreset(presetId: string) {
   return removeConnection(PRESET_PREFIX+presetId);
 }
 export async function removeConnection(id: string) {
+  sessions.delete(id);
+  initialized.delete(id);
+  versions.delete(id);
   await chrome.storage.local.set({[STORE]:(await allConnections()).filter(c=>c.id!==id)});
   return {success:true};
 }
 const sessions = new Map<string,string>();
-async function request(id: string, method: string, params: any = {}): Promise<any> {
+const initialized = new Map<string,Promise<void>>();
+const versions = new Map<string,string>();
+async function request(id: string, method: string, params: any = {}, notification = false): Promise<any> {
   const c = (await allConnections()).find(c=>c.id===id);
   if (!c) throw new Error('Unknown MCP server');
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(), TIMEOUT);
   try {
-    const headers: Record<string,string> = {'Content-Type':'application/json','Accept':'application/json, text/event-stream','MCP-Protocol-Version':'2025-03-26'};
+    const headers: Record<string,string> = {'Content-Type':'application/json','Accept':'application/json, text/event-stream','MCP-Protocol-Version':versions.get(id) || '2025-03-26'};
     if (c.token) headers.Authorization = 'Bearer ' + c.token;
     if (sessions.has(id)) headers['Mcp-Session-Id'] = sessions.get(id)!;
-    const response = await fetch(c.url,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',id:crypto.randomUUID(),method,params}),signal:controller.signal,redirect:'error'});
-    if (!response.ok) throw new Error('MCP HTTP ' + response.status);
+    const requestId = crypto.randomUUID();
+    const response = await fetch(c.url,{method:'POST',headers,body:JSON.stringify({jsonrpc:'2.0',...(!notification ? {id:requestId} : {}),method,params}),signal:controller.signal,redirect:'error'});
+    if (!response.ok) throw new Error(response.status === 401 ? 'Sign in or configure an access token for ' + c.name : 'MCP HTTP ' + response.status);
     const sid = response.headers.get('Mcp-Session-Id');
     if (sid) sessions.set(id,sid);
+    if (notification) return;
     const raw = await response.text();
     if (raw.length > 1024*1024) throw new Error('MCP response too large');
     let result: any;
     if ((response.headers.get('content-type') || '').includes('text/event-stream')) {
-      const events = raw.split(/\\r?\\n/).filter(line=>line.startsWith('data:')).map(line=>line.slice(5).trim()).filter(line=>line && line!=='[DONE]');
-      result = JSON.parse(events[events.length-1] || '{}');
+      const events = raw.replace(/\r\n/g, '\n').split('\n\n').map(event => event.split('\n').filter(line=>line.startsWith('data:')).map(line=>line.slice(5).trimStart()).join('\n')).filter(data => data && data !== '[DONE]');
+      result = events.map(data=>JSON.parse(data)).find(message=>message.id === requestId);
     } else result = JSON.parse(raw);
+    if (!result || result.id !== requestId || result.jsonrpc !== '2.0') throw new Error('MCP returned no matching response');
     if (result.error) throw new Error(String(result.error.message || 'MCP error'));
     return result.result;
   } finally {clearTimeout(timer)}
 }
 async function ensureInitialized(id: string) {
-  if (sessions.has(id)) return;
-  await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:'1.2.0'}});
-  // Session-aware servers return Mcp-Session-Id; stateless servers are initialized per operation.
+  if (!initialized.has(id)) {
+    initialized.set(id, (async () => {
+      const result = await request(id,'initialize',{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'Synapse AI',version:chrome.runtime.getManifest().version}});
+      if (!['2024-11-05','2025-03-26','2025-06-18'].includes(result?.protocolVersion)) throw new Error('Unsupported MCP protocol version');
+      versions.set(id, result.protocolVersion);
+      await request(id, 'notifications/initialized', {}, true);
+    })());
+  }
+  try { await initialized.get(id); }
+  catch (error) { initialized.delete(id); sessions.delete(id); versions.delete(id); throw error; }
 }
 export async function listTools(id: string) {await ensureInitialized(id);return request(id,'tools/list',{});}
 export async function callTool(id: string, name: string, args: any) {
-  if (!/^[\\w.\\/-]{1,150}$/.test(name)) throw new Error('Invalid tool name');
+  if (!/^[\w.\/-]{1,150}$/.test(name)) throw new Error('Invalid tool name');
   if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Tool arguments must be an object');
   await ensureInitialized(id);
   return request(id,'tools/call',{name,arguments:args});

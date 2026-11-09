@@ -918,6 +918,16 @@ async function buildActionPrompt(pageState, context) {
     ? '\n⚠️ THIS IS THE FIRST MESSAGE in this chat — open by briefly briefing ChatGPT on the task AND how you want it to respond (detailed, step-by-step, ask clarifying questions if anything is ambiguous). This "trains" it to collaborate well.\n'
     : ''
 
+  // Load persisted playbooks on every planning turn; switches apply without a reload.
+  let skillGuidance = ''
+  if (globalThis.SynapseSkills) {
+    const api = globalThis.SynapseSkills
+    try {
+      const saved = await chrome.storage.local.get(api.STORE)
+      skillGuidance = api.prompt(saved[api.STORE], context.objective)
+    } catch (error) { console.warn('[skills] Could not load playbooks', error) }
+  }
+
   // User-awareness: the agent acts AS the configured creator/brand.
   const profile = loadProfile()
   const userContextBlock = profile
@@ -936,6 +946,7 @@ Error: ${context.lastError || 'None'}
 Step ${context.steps + 1}/${context.maxSteps}
 URL: ${context.url || 'No page'}
 ${memText ? `## 🧠 Experience (self-learning — reuse what worked before)\n${memText}\n` : ''}${firstTurnNote}
+${skillGuidance}
 ## Rules
 - Pick action targets from page state above. Never guess selectors.
 - You are a GENERAL browser agent — operate on ANY website, not only ChatGPT. Adapt to the page in front of you (search engine, dashboard, admin panel, docs site, shop, settings page, AI chat, etc.) and use the Platform Knowledge below.
@@ -2190,7 +2201,7 @@ async function renderMcpPresets() {
           if(preset.tokenRequired){token=(prompt(preset.tokenLabel||'Access token for '+preset.name)||'').trim();if(!token){mcpStatus(preset.name+' needs a token before it can be turned on');return}}
           const u=new URL(preset.url);const allowed=await chrome.permissions.request({origins:[u.origin+'/*']});if(!allowed){mcpStatus('Permission declined');return}
           const result=await mcpMessage('MCP_ENABLE_PRESET',{preset:preset.id,token});if(result?.error){mcpStatus(result.error);return}
-          mcpStatus('Turned on '+preset.name+'. Its tools are available now.')
+          mcpStatus('Enabled '+preset.name+'. Choose Tools to verify the connection and discover capabilities.')
         }
         await Promise.all([refreshMcpConnections(),renderMcpPresets()]);
       }catch(e){mcpStatus('Integration setup failed: '+e.message)}

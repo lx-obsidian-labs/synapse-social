@@ -1147,6 +1147,7 @@ html,body{width:100%;height:100%;overflow:hidden!important}
 @media(max-width:850px){.syn-shell{display:flex;flex-direction:column}.syn-nav{flex:0 0 auto;padding:6px 8px}.syn-brand,.syn-nav-footer{display:none}.syn-nav .tabs{flex-direction:row;overflow-x:auto!important;overflow-y:hidden!important;gap:3px!important}.syn-nav .tab{width:auto;min-height:38px;font-size:11px!important;white-space:nowrap;padding:9px 12px!important}.syn-center{flex:1;min-height:0;border-right:0}.syn-top{min-height:46px;padding:5px 9px}.syn-session{padding:8px 12px}.syn-top>.header{gap:4px!important}.syn-right{height:175px;flex:0 0 175px;border-top:1px solid #2c425b}.syn-right-tabs{height:35px}.syn-right-body{padding:7px;gap:6px}.syn-right-title,.syn-shortcuts,.syn-hud-host{display:none!important}.syn-activity{min-height:0;flex:1}.syn-activity-title{padding:5px 10px}.syn-activity .hud-log{padding:4px 9px!important}.syn-activity .lg{padding:3px!important}.syn-intro{padding:15px 10px 4px}.syn-intro h2{font-size:21px}.syn-intro p{font-size:11px}.syn-cards{grid-template-columns:repeat(3,minmax(0,1fr));padding:8px;gap:6px}.syn-card{min-height:84px;padding:9px;gap:4px}.syn-card-icon{font-size:17px}.syn-card strong{font-size:11px}.syn-card small{font-size:9px}.syn-center #tab-chat .messages{padding:9px!important}.syn-center .chat-input-area{margin:4px 8px 8px!important}.syn-center .suggestions{padding:4px 8px!important}}
 @media(max-width:420px){.syn-top>.page-bar{display:none!important}.syn-center .chat-input-area{padding:7px!important}.syn-card small{display:none}}
 </style>
+  <link rel="stylesheet" href="obsidian.css" />
 </head>
 <body>
 
@@ -1174,12 +1175,40 @@ html,body{width:100%;height:100%;overflow:hidden!important}
     <button class="tab" data-tab="generate"><span class="tab-icon">✨</span>Create</button>
     <button class="tab" data-tab="content"><span class="tab-icon">🎨</span>Library</button>
     <button class="tab" data-tab="tools"><span class="tab-icon">🛠️</span>Tools</button>
+    <button class="tab" data-tab="skills"><span class="tab-icon">◈</span>Skills</button>
     <button class="tab" data-tab="memory"><span class="tab-icon">🧠</span>History</button>
     <button class="tab" data-tab="settings"><span class="tab-icon">⚙️</span>Settings</button>
   </div>
 
   <!-- Content -->
   <div class="content">
+
+    <section class="tab-content" id="tab-skills" aria-label="Skills library">
+      <div class="skills-scroll">
+        <header class="skills-hero">
+          <div class="skills-eyebrow">LX OBSIDIAN LABS / WORKFLOW ENGINE</div>
+          <h2>Your skills. One workspace.</h2>
+          <p>Enable focused playbooks, build a brief, then put your browser to work.</p>
+          <span id="skills-count" class="skills-count">Loading skills…</span>
+        </header>
+        <div class="skills-controls">
+          <label class="skill-search-label">Search skills<input id="skills-search" type="search" placeholder="Search workflows, writing, browser…" /></label>
+          <label>Category<select id="skills-category"><option value="">All categories</option><option>Browser</option><option>Build</option><option>Research</option><option>Planning</option><option>Writing</option><option>Content</option></select></label>
+        </div>
+        <p class="skills-note">These are Synapse-authored workflow adaptations with links to their sources. Enabling a playbook adds guidance to relevant agent tasks. External CLIs, native browsers and paid services need separate runtime integrations.</p>
+        <div id="skills-grid" class="skills-grid"></div>
+        <section class="skill-studio" aria-labelledby="skill-selected">
+          <div class="skills-eyebrow">SKILL STUDIO / AI-ASSISTED TEXT</div>
+          <h3 id="skill-selected">Choose a skill</h3>
+          <p id="skill-requirement" class="skills-note"></p>
+          <label for="skill-task">Task, follow-up, or text to transform</label>
+          <textarea id="skill-task" rows="5" maxlength="20000" placeholder="Describe your goal, paste text, or ask a follow-up…"></textarea>
+          <div class="skill-actions"><button type="button" id="skill-run" class="btn btn-primary">Run playbook</button><button type="button" id="skill-agent" class="btn btn-secondary">Prepare browser task</button><button type="button" id="skill-copy" class="btn btn-secondary">Copy result</button></div>
+          <p id="skills-status" role="status" aria-live="polite"></p>
+          <pre id="skill-studio-output" tabindex="0" aria-label="Skill result"></pre>
+        </section>
+      </div>
+    </section>
 
     <!-- AI Chat Tab -->
     <div class="tab-content active" id="tab-chat">
@@ -1820,7 +1849,6 @@ html,body{width:100%;height:100%;overflow:hidden!important}
 .syn-nav-footer{font-size:10px;opacity:.65}
 @media(max-width:1100px){
  .syn-nav .tabs .tab{justify-content:center;padding:9px 5px}
- .syn-nav .tabs .tab .syn-tab-label{display:none}
  .syn-nav .tabs .tab .syn-icon{width:19px;height:19px}
  .syn-nav .tabs .tab{position:relative}
  .syn-nav .tabs .tab:focus-visible{outline:2px solid #22c8f5;outline-offset:-2px}
@@ -1832,26 +1860,11 @@ html,body{width:100%;height:100%;overflow:hidden!important}
  .syn-shortcut{min-height:36px}
 }
 
-/* Compact Synapse workspace: extension-first sizing, not a desktop dashboard. */
-.syn-shell{grid-template-columns:56px minmax(0,1fr) 0!important;max-width:100vw}
-.syn-nav{padding:8px 5px!important;gap:4px}
-.syn-brand{padding:7px 2px 12px!important;justify-content:center}
-.syn-brand strong,.syn-brand small,.syn-nav-footer,.syn-nav .syn-tab-label{display:none!important}
-.syn-mark{width:34px!important;height:34px!important;font-size:23px!important}
-.syn-nav .tabs .tab{justify-content:center!important;padding:10px 4px!important;min-width:0}
-.syn-nav .tabs .tab .syn-icon{width:19px!important;height:19px!important}
-.syn-right{display:none!important}
-.syn-shell .syn-center{min-width:0}
-.syn-shell .syn-center .syn-chat,.syn-shell .syn-center .syn-workspace{min-width:0}
-.syn-shell .syn-shortcuts{display:none}
-.syn-shell .syn-right-body{padding:8px!important}
-.syn-shell button,.syn-shell input{min-width:0}
-.syn-shell .syn-activity #hud-log{max-height:100px!important}
-@media(min-width:900px){.syn-shell{grid-template-columns:64px minmax(0,1fr) 250px!important}.syn-right{display:flex!important}.syn-right-tabs{height:42px!important}.syn-right-body{padding:9px!important}}
-@media(max-width:460px){.syn-shell{grid-template-columns:48px minmax(0,1fr) 0!important}.syn-nav{padding:6px 3px!important}.syn-mark{width:30px!important;height:30px!important}}
 </style>
   <script src="browser-flow.js"></script>
+  <script src="skills.js"></script>
   <script src="sidepanel.js"></script>
   <script src="shell.js"></script>
+  <script src="skills-ui.js"></script>
 </body>
 </html>

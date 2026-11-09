@@ -18,7 +18,7 @@
     integrate:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M17.5 14v7M14 17.5h7"/>'
   };
   const iconSvg = (name) => '<svg class="syn-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[name] + '</svg>';
-  const tabIcons = {chat:'chat',create:'create',library:'library',tools:'tools',history:'history',settings:'settings'};
+  const tabIcons = {chat:'chat',generate:'create',content:'library',tools:'tools',skills:'integrate',memory:'history',settings:'settings'};
   tabs.querySelectorAll('.tab').forEach(tab => {
     const name = tab.dataset.tab;
     if (!tabIcons[name]) return;
@@ -34,7 +34,7 @@
   brand.innerHTML = '<div class="syn-mark">◈</div><div><strong>SYNAPSE AI</strong><small>LX OBSIDIAN LABS</small></div>';
   const center = document.createElement('main'); center.className = 'syn-center';
   const top = document.createElement('div'); top.className = 'syn-top';
-  const tabLabel = document.createElement('span'); tabLabel.className='syn-session'; tabLabel.textContent = '＋  New Chat';
+  const tabLabel = document.createElement('span'); tabLabel.className='syn-session'; tabLabel.textContent = 'Agent workspace';
   const right = document.createElement('aside'); right.className = 'syn-right';
   const rightTabs = document.createElement('div'); rightTabs.className='syn-right-tabs';
   const rightBody = document.createElement('div'); rightBody.className='syn-right-body';
@@ -86,8 +86,10 @@
   if(chat){const messages=$('chat-messages'); if(messages){chat.insertBefore(intro,messages);chat.insertBefore(cards,messages)}}
   const footer=document.querySelector('body > .app-footer');
   const navFooter=document.createElement('div');navFooter.className='syn-nav-footer';
-  navFooter.textContent='LX Obsidian Labs · v1.2.0';
+  navFooter.textContent='LX Obsidian Labs · v' + chrome.runtime.getManifest().version;
   nav.append(brand,tabs,navFooter);
+  const profile = $('profile-bar');
+  if (profile) nav.insertBefore(profile, navFooter);
   top.append(tabLabel,header,page);
   center.append(top,content);
   right.append(rightTabs,rightBody);

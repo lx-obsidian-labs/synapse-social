@@ -18,6 +18,8 @@ CLAUDE.md
 *.tmp
 __pycache__
 *.pyc
+test-results/
+playwright-report/
 .env.local
 .next
 .github

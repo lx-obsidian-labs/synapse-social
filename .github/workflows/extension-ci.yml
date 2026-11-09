@@ -23,6 +23,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - name: Read extension version
+        run: node -e "require('fs').appendFileSync(process.env.GITHUB_ENV, 'EXT_VERSION=' + require('./manifest.json').version + '\n')"
       - name: Check runtime versions
         run: |
           node --version
@@ -31,23 +33,30 @@ jobs:
       - name: Run deterministic browser-flow tests
         run: npm test
       - name: Build and package extension
+        env:
+          SUPABASE_PROXY_URL: https://fvfrbxyrlonmucyvzppk.supabase.co/functions/v1/nvidia-proxy
         run: npm run zip
+      - name: Install browser test runtime
+        run: npx playwright install --with-deps chromium
+      - name: Test real extension UI
+        run: npm run test:ui
       - name: Validate package
         run: |
-          node -e "const fs=require('fs');const p='dist/manifest.json';const m=JSON.parse(fs.readFileSync(p));for(const x of ['background.js','content.js','sidepanel.js','shell.js','browser-flow.js','popup.js','sidepanel.html','popup.html'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!=='1.2.0')throw Error('Version mismatch')"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('dist/manifest.json'));for(const x of ['background.js','content.js','sidepanel.js','shell.js','browser-flow.js','popup.js','sidepanel.html','popup.html','skills.js','skills-ui.js','obsidian.css'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!==process.env.EXT_VERSION)throw Error('Version mismatch')"
       - name: Verify ZIP structure and integrity
         run: |
           set -euo pipefail
-          test -s synapse-ai-v1.2.0-test.zip
-          unzip -t synapse-ai-v1.2.0-test.zip
-          for file in manifest.json background.js content.js sidepanel.html sidepanel.js browser-flow.js shell.js popup.html popup.js; do
-            unzip -Z1 synapse-ai-v1.2.0-test.zip | grep -Fxq "$file" || { echo "::error::ZIP missing root-level $file"; exit 1; }
+          archive="synapse-ai-v${EXT_VERSION}-test.zip"
+          test -s "$archive"
+          unzip -t "$archive"
+          for file in manifest.json background.js content.js sidepanel.html sidepanel.js browser-flow.js shell.js popup.html popup.js skills.js skills-ui.js obsidian.css; do
+            unzip -Z1 "$archive" | grep -Fxq "$file" || { echo "::error::ZIP missing root-level $file"; exit 1; }
           done
           echo 'Extension ZIP verified: manifest and runtime files are at the archive root.'
       - uses: actions/upload-artifact@v4
         with:
-          name: synapse-ai-v1.2.0-test
-          path: apps/extension/synapse-ai-v1.2.0-test.zip
+          name: synapse-ai-v${{ env.EXT_VERSION }}-test
+          path: apps/extension/synapse-ai-v${{ env.EXT_VERSION }}-test.zip
           retention-days: 7
 
       - name: Package experimental MCP companion
@@ -72,5 +81,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v1.2.0-test --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create v1.2.0-test --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Synapse AI 1.2.0 — Test build" --notes "Early testing build. Install manually and send usage logs. MCP and AI integration are experimental." --prerelease
-          gh release upload v1.2.0-test synapse-ai-v1.2.0-test.zip ../../synapse-mcp-companion-test.zip --repo "$GITHUB_REPOSITORY" --clobber
+          tag="v${EXT_VERSION}-test"
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Synapse AI ${EXT_VERSION} — Test build" --notes "Obsidian UI, Skills Library and AI text studio. Skill playbooks are adapted guidance; external CLI and rendering runtimes are not bundled. MCP integrations require endpoint access and any necessary credentials." --prerelease
+          gh release upload "$tag" "synapse-ai-v${EXT_VERSION}-test.zip" ../../synapse-mcp-companion-test.zip --repo "$GITHUB_REPOSITORY" --clobber
