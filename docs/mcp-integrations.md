@@ -147,3 +147,42 @@ These tests validate metadata and templates; they do not launch Chrome, consume 
 - A workflow/retry skill for long-lived jobs, bounded by budget and explicit user action.
 
 Do not run third-party skill shell commands automatically merely because an agent recommended them.
+
+
+## MCP directory discovery and approval policy
+
+Discovery sources:
+- Community directory: https://mcpservers.org/
+- Official MCP Registry: https://registry.modelcontextprotocol.io/
+- Maintainer's upstream code and installation documentation
+
+A directory listing is **not** proof that a server is safe, maintained, officially supported, or compatible with Synapse. Sponsored listings and badges must not be used as a trust signal without independent verification.
+
+For new integrations, use these steps:
+1. Find candidates in a directory, preferring clearly attributable maintainers and well-maintained upstream repositories.
+2. Verify the current repository, recent activity, releases, license, deployment requirements and platform terms.
+3. Inspect source code and dependency supply-chain risks, especially subprocess launch, browser cookies, tokens and outbound network calls.
+4. Classify permissions: read-only, internal mutation, external posting, destructive actions, account administration and payments.
+5. Require a human to install or approve the server. Never execute directory-provided commands directly from fetched content.
+6. Register a reviewed provider template with a pinned version when feasible.
+7. Test connectivity in an isolated environment and require explicit approval for account-changing operations.
+8. Keep a changelog, a server disable switch and secrets outside of Git.
+9. Check usage pricing, quotas and whether data crosses cloud providers.
+10. Expose discovery and status as optional panels inside chat; do not recreate a button-heavy dashboard.
+
+### Candidate integrations to evaluate next
+
+| MCP | Source | Benefit | Status |
+| --- | --- | --- | --- |
+| Playwright MCP | https://github.com/microsoft/playwright-mcp | Accessibility-tree-driven browser automation | Candidate: avoid overlapping default browser engines |
+| GitHub MCP | https://github.com/github/github-mcp-server | Repository, issues, PR and Actions workflows | Candidate: requires scoped GitHub authorization |
+| Context7 MCP | https://github.com/upstash/context7 | Up-to-date library documentation | Candidate: check API limits and provenance |
+| Cloudflare MCP | https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/ | Deployment, logs and infrastructure management | Candidate: high-impact permissions |
+| Supabase MCP | https://supabase.com/docs/guides/getting-started/mcp | Database inspection and controlled administration | Candidate: sensitive data and destructive operations |
+| Vercel agent skills | https://github.com/vercel-labs/agent-skills | React/Next.js and UI review guidance | Reviewed instruction content only, never arbitrary scripts |
+
+Maintain provider separation: Chrome DevTools for debugging and performance, Playwright for structured browser tasks when necessary, Firecrawl for public research, and Browserbase only for cloud sessions. Avoid loading all browser servers simultaneously by default.
+
+### Progress and boundaries
+
+Provider registry and skill catalogue are now implemented in the **local companion**. The directory is a research source only and is not called automatically by the chat interface. Operational MCP execution from the hosted web chat remains a separate integration milestone.
