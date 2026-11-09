@@ -3,5 +3,5 @@ packages:
   - "packages/*"
   - "workers/*"
 allowBuilds:
-  esbuild: set this to true or false
-  unrs-resolver: set this to true or false
+  esbuild: true
+  unrs-resolver: true

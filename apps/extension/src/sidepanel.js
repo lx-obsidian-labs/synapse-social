@@ -2168,6 +2168,36 @@ $('memory-clear-2').addEventListener('click', async () => {
 // MCP connections: user-managed; every tool call requires explicit confirmation.
 async function mcpMessage(type,payload={}) {return chrome.runtime.sendMessage({type,payload})}
 function mcpStatus(message) {const el=document.getElementById('mcp-status');if(el)el.textContent=message}
+async function renderMcpPresets() {
+  const root=document.getElementById('mcp-presets');if(!root)return;
+  const [presets,connections]=await Promise.all([mcpMessage('MCP_LIST_PRESETS'),mcpMessage('MCP_LIST_CONNECTIONS')]);
+  root.replaceChildren();
+  if(!Array.isArray(presets)){mcpStatus(presets?.error||'Unable to load built-in integrations');return}
+  const enabled=new Map((Array.isArray(connections)?connections:[]).filter(c=>c.preset).map(c=>[c.preset,c]));
+  for(const preset of presets){
+    const row=document.createElement('div');row.className='model-item';
+    const text=document.createElement('div');text.style.cssText='flex:1 1 150px;min-width:0';
+    const name=document.createElement('div');name.className='model-name';name.textContent=preset.name;
+    const desc=document.createElement('div');desc.className='settings-sub';desc.style.marginTop='2px';desc.textContent=preset.description;
+    text.append(name,desc);
+    const on=enabled.has(preset.id);
+    const toggle=document.createElement('button');toggle.className='btn '+(on?'btn-secondary':'btn-primary');toggle.textContent=on?'Turn off':'Turn on';
+    toggle.addEventListener('click',async()=>{
+      try{
+        if(on){await mcpMessage('MCP_DISABLE_PRESET',{preset:preset.id});mcpStatus('Turned off '+preset.name)}
+        else{
+          let token='';
+          if(preset.tokenRequired){token=(prompt(preset.tokenLabel||'Access token for '+preset.name)||'').trim();if(!token){mcpStatus(preset.name+' needs a token before it can be turned on');return}}
+          const u=new URL(preset.url);const allowed=await chrome.permissions.request({origins:[u.origin+'/*']});if(!allowed){mcpStatus('Permission declined');return}
+          const result=await mcpMessage('MCP_ENABLE_PRESET',{preset:preset.id,token});if(result?.error){mcpStatus(result.error);return}
+          mcpStatus('Turned on '+preset.name+'. Its tools are available now.')
+        }
+        await Promise.all([refreshMcpConnections(),renderMcpPresets()]);
+      }catch(e){mcpStatus('Integration setup failed: '+e.message)}
+    });
+    row.append(text,toggle);root.appendChild(row);
+  }
+}
 async function refreshMcpConnections() {
   const root=document.getElementById('mcp-connections');if(!root)return;
   const items=await mcpMessage('MCP_LIST_CONNECTIONS');root.replaceChildren();
@@ -2207,6 +2237,7 @@ document.getElementById('mcp-add')?.addEventListener('click',async()=>{
   }catch(e){mcpStatus('Connection setup failed: '+e.message)}
 });
 refreshMcpConnections().catch(e=>mcpStatus(String(e)));
+renderMcpPresets().catch(e=>mcpStatus(String(e)));
 
 // --- Settings tab ---
 const SETTINGS_MODELS = [

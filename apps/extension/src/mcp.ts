@@ -1,10 +1,33 @@
-/** MCP Streamable HTTP client. Connections are configured by the user, never auto-discovered. */
-export type McpConnection = { id: string; name: string; url: string; token?: string };
+/** MCP Streamable HTTP client. Built-in presets are opt-in; custom connections are user-added. */
+export type McpConnection = { id: string; name: string; url: string; token?: string; preset?: string };
+export type McpPreset = {
+  id: string;
+  name: string;
+  url: string;
+  description: string;
+  tokenRequired?: boolean;
+  tokenLabel?: string;
+};
+export const PRESET_PREFIX = 'preset:';
+/** Curated remote MCP servers verified to answer a Streamable HTTP initialize request. */
+export const MCP_PRESETS: McpPreset[] = [
+  {id:'deepwiki', name:'DeepWiki', url:'https://mcp.deepwiki.com/mcp',
+   description:'Ask questions about any public GitHub repository.'},
+  {id:'context7', name:'Context7', url:'https://mcp.context7.com/mcp',
+   description:'Up-to-date library and framework documentation.', tokenLabel:'API key (optional)'},
+  {id:'huggingface', name:'Hugging Face', url:'https://huggingface.co/mcp',
+   description:'Models, datasets and Spaces. Sign in with a Hugging Face token.', tokenLabel:'Access token (optional)'},
+  {id:'oneclickwebsite', name:'1ClickWebsite', url:'https://www.1clickwebsite.ai/api/mcp',
+   description:'Build and edit WordPress sites and Lead Gen batches.', tokenRequired:true, tokenLabel:'1ClickWebsite API key'},
+  {id:'github', name:'GitHub', url:'https://api.githubcopilot.com/mcp/',
+   description:'Repositories, issues and pull requests.', tokenRequired:true, tokenLabel:'GitHub personal access token'}
+];
+export function listPresets(): McpPreset[] {return MCP_PRESETS}
 const STORE = 'synapse_mcp_connections_v1';
 const TIMEOUT = 20000;
 export async function listConnections(): Promise<Omit<McpConnection, 'token'>[]> {
   const r = await chrome.storage.local.get(STORE);
-  return ((r[STORE] || []) as McpConnection[]).map(({id,name,url})=>({id,name,url}));
+  return ((r[STORE] || []) as McpConnection[]).map(({id,name,url,preset})=>({id,name,url,preset}));
 }
 async function allConnections(): Promise<McpConnection[]> {
   const r = await chrome.storage.local.get(STORE);
@@ -23,11 +46,19 @@ export async function saveConnection(data: Partial<McpConnection>) {
   const url = validateUrl(String(data.url || ''));
   const list = await allConnections();
   if (list.length >= 12 && !list.some(c=>c.id===data.id)) throw new Error('Maximum 12 servers');
-  const id = data.id && list.some(c=>c.id===data.id) ? data.id : crypto.randomUUID();
+  const id = data.id && /^[\w.:-]{1,80}$/.test(data.id) ? data.id : crypto.randomUUID();
   const next = list.filter(c=>c.id!==id);
-  next.push({id,name,url,token:String(data.token || '').trim().slice(0,2048)});
+  next.push({id,name,url,token:String(data.token || '').trim().slice(0,2048),...(data.preset?{preset:String(data.preset).slice(0,40)}:{})});
   await chrome.storage.local.set({[STORE]:next});
   return {id,name,url};
+}
+export function enablePreset(presetId: string, token = '') {
+  const preset = MCP_PRESETS.find(p=>p.id===presetId);
+  if (!preset) throw new Error('Unknown built-in integration');
+  return saveConnection({id:PRESET_PREFIX+preset.id,name:preset.name,url:preset.url,token,preset:preset.id});
+}
+export function disablePreset(presetId: string) {
+  return removeConnection(PRESET_PREFIX+presetId);
 }
 export async function removeConnection(id: string) {
   await chrome.storage.local.set({[STORE]:(await allConnections()).filter(c=>c.id!==id)});

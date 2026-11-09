@@ -8,12 +8,13 @@
     "workers/*"
   ],
   "scripts": {
-    "dev": "pnpm --filter web dev",
-    "build": "pnpm --filter web build && pnpm --filter extension build",
-    "lint": "pnpm --filter web lint && pnpm --filter extension lint",
-    "typecheck": "pnpm --filter web typecheck && pnpm --filter extension typecheck",
-    "test": "pnpm --filter web test",
-    "test:extension": "pnpm --filter extension test"
+    "dev": "pnpm --filter synapse-web dev",
+    "build": "pnpm --filter synapse-web build && pnpm --filter synapse-extension build",
+    "lint": "pnpm --filter synapse-web lint",
+    "typecheck": "pnpm --filter synapse-web typecheck",
+    "test": "pnpm --filter synapse-extension test",
+    "test:extension": "pnpm --filter synapse-extension test",
+    "ship": "powershell -ExecutionPolicy Bypass -File scripts/ship.ps1"
   },
   "pnpm": {
     "overrides": {

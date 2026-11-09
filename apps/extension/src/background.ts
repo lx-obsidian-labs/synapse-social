@@ -1,4 +1,4 @@
-import { listConnections, saveConnection, removeConnection, listTools, callTool } from './mcp'
+import { listConnections, saveConnection, removeConnection, listTools, callTool, listPresets, enablePreset, disablePreset } from './mcp'
 // --- Types ---
 
 interface SynapseMessage {
@@ -17,6 +17,9 @@ interface SynapseMessage {
     | 'TOOL_EXECUTE'
     | 'BROWSER_TOOL'
     | 'MCP_LIST_CONNECTIONS'
+    | 'MCP_LIST_PRESETS'
+    | 'MCP_ENABLE_PRESET'
+    | 'MCP_DISABLE_PRESET'
     | 'MCP_SAVE_CONNECTION'
     | 'MCP_REMOVE_CONNECTION'
     | 'MCP_LIST_TOOLS'
@@ -964,6 +967,15 @@ chrome.runtime.onMessage.addListener(
 
       case 'MCP_LIST_CONNECTIONS':
         listConnections().then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
+      case 'MCP_LIST_PRESETS':
+        sendResponse(listPresets())
+        return true
+      case 'MCP_ENABLE_PRESET':
+        Promise.resolve().then(()=>enablePreset(String(message.payload?.preset || ''),String(message.payload?.token || ''))).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
+        return true
+      case 'MCP_DISABLE_PRESET':
+        Promise.resolve().then(()=>disablePreset(String(message.payload?.preset || ''))).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
         return true
       case 'MCP_SAVE_CONNECTION':
         saveConnection(message.payload || {}).then(sendResponse).catch(e=>sendResponse({error:String(e.message||e)}))
