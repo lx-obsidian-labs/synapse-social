@@ -11,6 +11,7 @@ REQUIRED = (
     "shell.js", "popup.js", "sidepanel.html", "popup.html", "browser-flow.js",
     "skills.js", "skills-ui.js", "obsidian.css",
     "orchestration.js", "retrieval.js",
+    "updates-ui.js",
 )
 
 def main():

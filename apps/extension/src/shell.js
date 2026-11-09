@@ -47,7 +47,7 @@
   const shell = document.createElement('main'); shell.className = 'minimal-shell';
   const top = document.createElement('div'); top.className = 'minimal-top';
   const brand = document.createElement('div'); brand.className = 'minimal-brand'; brand.textContent = 'Synapse';
-  const sub = document.createElement('small'); sub.textContent = 'LX Obsidian Labs'; brand.append(sub);
+  const sub = document.createElement('small'); sub.textContent = 'v' + chrome.runtime.getManifest().version; brand.append(sub);
   top.append(brand, header); shell.append(top, tabs, page, content);
   const newChat = document.createElement('button'); newChat.className = 'new-chat'; newChat.textContent = '+';
   newChat.type = 'button'; newChat.title = 'New chat'; newChat.setAttribute('aria-label', 'New chat');

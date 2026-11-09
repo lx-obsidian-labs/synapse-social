@@ -95,7 +95,7 @@ async function copyAssets() {
     cpSync(publicDir, distDir, { recursive: true })
   }
 
-  const assetsWithPlaceholders = ['sidepanel.html', 'popup.html', 'popup.js', 'sidepanel.js', 'shell.js', 'browser-flow.js', 'skills.js', 'skills-ui.js', 'orchestration.js', 'retrieval.js', 'obsidian.css']
+  const assetsWithPlaceholders = ['sidepanel.html', 'popup.html', 'popup.js', 'sidepanel.js', 'shell.js', 'browser-flow.js', 'skills.js', 'skills-ui.js', 'orchestration.js', 'retrieval.js', 'updates-ui.js', 'obsidian.css']
   for (const file of assetsWithPlaceholders) {
     const srcPath = resolve(srcDir, file)
     if (existsSync(srcPath)) {
@@ -113,7 +113,7 @@ async function copyAssets() {
   }
 
   // Validate the raw (non-esbuild) JS files so syntax errors fail the build
-  const rawJs = ['sidepanel.js', 'popup.js', 'shell.js', 'browser-flow.js', 'skills.js', 'skills-ui.js', 'orchestration.js', 'retrieval.js'].map(file => resolve(distDir, file))
+  const rawJs = ['sidepanel.js', 'popup.js', 'shell.js', 'browser-flow.js', 'skills.js', 'skills-ui.js', 'orchestration.js', 'retrieval.js', 'updates-ui.js'].map(file => resolve(distDir, file))
   for (const jsPath of rawJs) {
     if (existsSync(jsPath)) checkJsSyntax(jsPath)
   }

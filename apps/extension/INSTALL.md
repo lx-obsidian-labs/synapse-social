@@ -4,7 +4,7 @@ Synapse AI is a Chrome/Edge browser extension that automates web pages with AI.
 
 ## Install (from the downloaded ZIP)
 
-1. **Download** `synapse-ai-v1.4.0-test.zip` and **unzip** it. You'll get a folder
+1. **Download** `synapse-ai-v1.4.1-test.zip` and **unzip** it. You'll get a folder
    named `dist` (or `synapse-ai`) containing `manifest.json`.
 2. Open your browser's extensions page:
    - Chrome: `chrome://extensions`
@@ -17,6 +17,19 @@ Synapse AI is a Chrome/Edge browser extension that automates web pages with AI.
 
 The test package is configured for the hosted AI proxy. If the service is
 unavailable or rate-limited, open Settings to configure your own NVIDIA key.
+
+## In-app updates
+
+Open **Settings → Synapse updates** to see the installed version and check for
+newer stable or test packages. Automatic checks are cached for six hours; the
+Check for updates button refreshes the check. A quiet download notice appears
+when a newer packaged release exists. Dismissing it keeps the download available
+in Settings.
+
+For an unpacked extension, extract the ZIP into your existing extension folder,
+click **Reload** at `chrome://extensions`, refresh the webpage and reopen Synapse.
+The app cannot replace its own installed files. Builds before 1.4.1 need this
+manual update once before they can show future in-app update notices.
 
 ## Skills Library and Studio
 

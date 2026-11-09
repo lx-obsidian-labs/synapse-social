@@ -113,6 +113,13 @@ body.light { --primary:#225fad; --primary-dark:#174b8f; --primary-light:#225fad1
 #skill-studio-output:empty { display:none; }
 #mcp-presets .model-item { display:flex; align-items:center; gap:10px; padding:14px 0; border-bottom:1px solid var(--border); }
 button:disabled { opacity:.5; cursor:not-allowed; }
+.update-notice { display:flex; align-items:center; gap:12px; padding:9px 20px; border-bottom:1px solid var(--border); background:var(--primary-light); font-size:11px; flex-shrink:0; flex-wrap:wrap; }
+.update-notice span { flex:1; min-width:150px; }
+.update-notice a,.update-card a { color:var(--primary); font-size:11px; }
+.update-notice button { color:var(--text-secondary); border:0; background:none; cursor:pointer; padding:5px; font:inherit; }
+.update-card>details { font-size:11px; color:var(--text-secondary); line-height:1.7; }
+.update-card>details summary { cursor:pointer; margin-top:10px; }
+.update-card ul { padding-left:18px; margin:10px 0; }
 .btn-primary { background:var(--text)!important; color:var(--bg)!important; }
 .btn-primary:hover { background:var(--text-secondary)!important; }
 .obsidian-popup { background:var(--bg)!important; color:var(--text)!important; }

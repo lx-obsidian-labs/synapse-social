@@ -10,6 +10,11 @@ test.beforeAll(async () => {
   })
   worker = context.serviceWorkers()[0] || await context.waitForEvent('serviceworker')
   extensionId = new URL(worker.url()).hostname
+  // UI tests exercise update states deterministically without GitHub network traffic.
+  await worker.evaluate(async () => {
+    const version = chrome.runtime.getManifest().version
+    await chrome.storage.local.set({synapse_update_cache_v1:{installedVersion:version,checkedAt:Date.now(),latestVersion:version}})
+  })
   await context.addInitScript(() => {
     localStorage.setItem('synapse-theme', 'dark')
     localStorage.setItem('synapse-onboarded', 'true')
@@ -267,4 +272,42 @@ test('live content script preserves deep-page text and long observed download UR
   }, observed)
   expect(retrieved).toEqual({source:url,firstLink:longUrl})
   await panel.close(); await source.close(); await context.unroute('https://awareness.synapse.test/**')
+})
+
+test('in-app update notice appears for a newer build, can be dismissed, and manual errors are visible', async () => {
+  await worker.evaluate(async () => {
+    const installedVersion = chrome.runtime.getManifest().version
+    await chrome.storage.local.set({synapse_update_cache_v1:{installedVersion,checkedAt:Date.now(),latestVersion:'1.5.0',
+      downloadUrl:'https://github.com/lx-obsidian-labs/synapse-social/releases/download/v1.5.0-test/synapse-ai-v1.5.0-test.zip',
+      releaseUrl:'https://github.com/lx-obsidian-labs/synapse-social/releases/tag/v1.5.0-test'}})
+  })
+  const page = await context.newPage()
+  await page.goto(`chrome-extension://${extensionId}/sidepanel.html`)
+  await expect(page.locator('#update-notice')).toBeVisible()
+  await expect(page.locator('#update-notice-text')).toContainText('1.5.0')
+  await expect(page.locator('#update-notice-download')).toHaveAttribute('href',/synapse-ai-v1\.5\.0-test\.zip$/)
+  await page.locator('#update-later').click()
+  await page.reload()
+  await expect(page.locator('#update-notice')).toBeHidden()
+  await page.locator('.tab[data-tab="settings"]').click()
+  await expect(page.locator('#update-download')).toBeVisible()
+  await expect(page.locator('#update-installed')).toContainText('1.4.1')
+  await page.evaluate(() => {
+    const original = chrome.runtime.sendMessage.bind(chrome.runtime)
+    chrome.runtime.sendMessage = (message,...args) => message.type === 'CHECK_FOR_UPDATE'
+      ? Promise.resolve({installedVersion:chrome.runtime.getManifest().version,error:'Network unavailable'}) : original(message,...args)
+  })
+  await page.locator('#update-check').click()
+  await expect(page.locator('#update-status')).toContainText('Network unavailable')
+  await expect(page.locator('#update-check')).toBeEnabled()
+  await page.close()
+  await worker.evaluate(async () => {
+    const version = chrome.runtime.getManifest().version
+    await chrome.storage.local.set({synapse_update_cache_v1:{installedVersion:version,checkedAt:Date.now(),latestVersion:version}})
+    await chrome.storage.local.remove('synapse_update_dismissed')
+  })
+  const popup = await context.newPage()
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`)
+  await expect(popup.locator('#popup-version')).toContainText('v1.4.1')
+  await popup.close()
 })

@@ -1,4 +1,5 @@
 import { listConnections, saveConnection, removeConnection, listTools, callTool, listPresets, enablePreset, disablePreset } from './mcp'
+import { checkForUpdate } from './updates'
 // --- Types ---
 
 interface SynapseMessage {
@@ -24,6 +25,7 @@ interface SynapseMessage {
     | 'MCP_REMOVE_CONNECTION'
     | 'MCP_LIST_TOOLS'
     | 'MCP_CALL_TOOL'
+    | 'CHECK_FOR_UPDATE'
   payload?: any
 }
 
@@ -926,6 +928,10 @@ async function handleBrowserTool(tool: string, args: string[]): Promise<{ succes
 chrome.runtime.onMessage.addListener(
   (message: SynapseMessage, sender, sendResponse) => {
     switch (message.type) {
+      case 'CHECK_FOR_UPDATE':
+        if (!sender.url?.startsWith(chrome.runtime.getURL(''))) { sendResponse({error:'Update checks must originate from Synapse UI'}); return }
+        checkForUpdate(message.payload?.force === true).then(sendResponse).catch(error => sendResponse({error:String(error.message || error)}))
+        return true
       case 'OPEN_SIDEPANEL':
       case 'TOGGLE_SYNAPSE':
         openSidePanel()

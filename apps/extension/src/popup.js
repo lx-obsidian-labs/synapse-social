@@ -5,6 +5,7 @@
     const actionsContainer = document.getElementById('actions-container')
     const openPanel = document.getElementById('open-panel')
     const settingsLink = document.getElementById('settings-link')
+    document.getElementById('popup-version').textContent = 'v' + chrome.runtime.getManifest().version + ' · LX Obsidian Labs'
 
     const pageActions = {
       page: [
