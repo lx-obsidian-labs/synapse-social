@@ -1,0 +1,21 @@
+// Curated workflow skills are declarative guidance, NOT executable downloaded code.
+// Execute only through user-approved MCP tools selected at runtime.
+export const skills = Object.freeze([
+  { id: "linkedin-profile-audit", name: "LinkedIn Profile Audit", category: "career", providers: ["linkedin"], safety: "read", goal: "Review the user's profile against role-specific recruiter criteria and return an evidence-backed score and replacement drafts.", instructions: ["Read only the authorized profile sections.", "Check headline, About, experience, featured projects and keywords.", "Score each section with observable evidence and highlight missing facts.", "Draft replacements, but never claim they were applied."] },
+  { id: "job-research", name: "International Job Research", category: "career", providers: ["linkedin", "firecrawl"], safety: "read", goal: "Find roles, extract requirements and rank verified matches.", instructions: ["Search by location, remote eligibility and stack.", "Read job detail pages and record links.", "Separate job evidence from assumptions.", "Never apply or send messages without approval."] },
+  { id: "website-audit", name: "Website QA & Performance", category: "engineering", providers: ["chrome-devtools", "firecrawl"], safety: "read", goal: "Audit site accessibility, load performance, broken navigation and mobile layout.", instructions: ["Discover public pages with Firecrawl.", "Run Chrome checks in isolated browser sessions.", "Capture console/network findings and recommendations.", "Do not publish site changes automatically."] },
+  { id: "competitive-intelligence", name: "Competitive Research", category: "research", providers: ["firecrawl"], safety: "read", goal: "Compare competitor positioning using cited public evidence.", instructions: ["Collect primary-source pages.", "Respect robots and site access restrictions.", "Summarize features, pricing and messaging with URLs.", "Label inaccessible or outdated findings."] },
+  { id: "browser-workflow", name: "Browser Workflow Automation", category: "automation", providers: ["chrome-devtools", "browserbase"], safety: "approval", goal: "Plan and perform bounded browser tasks, requesting approval before mutations.", instructions: ["Describe steps and expected side effects.", "Use an isolated browser when possible.", "Observe and verify each action.", "Confirm before posts, sends, deletes, purchases or account changes."] },
+  { id: "structured-extraction", name: "Structured Website Extraction", category: "research", providers: ["firecrawl", "chrome-devtools"], safety: "read", goal: "Extract website information into auditable structured records.", instructions: ["Define the required fields before extraction.", "Limit domains, pages and credit use.", "Keep provenance per row.", "Mark missing data as unknown."] },
+  { id: "document-report", name: "Research Report Builder", category: "documents", providers: ["firecrawl"], safety: "read", goal: "Create a grounded executive summary or report draft from fetched sources.", instructions: ["Use trustworthy sources with dates.", "Cite claims individually.", "Distinguish evidence, analysis and recommendations.", "Require approval before publishing externally."] },
+  { id: "social-content", name: "Social Content Assistant", category: "marketing", providers: ["linkedin"], safety: "approval", goal: "Plan channel-appropriate social content from brand-approved facts.", instructions: ["Verify source facts and brand tone.", "Create posts and visuals as drafts.", "Ask for approval before posting, messaging or connection requests.", "Track published results only when verifiable."] },
+  { id: "release-qa", name: "Release Readiness QA", category: "engineering", providers: ["chrome-devtools"], safety: "read", goal: "Verify key flows, regressions and browser errors before release.", instructions: ["Create repeatable acceptance checks.", "Run accessible navigation and responsive checks.", "Record reproducible failures.", "Never declare a build passed without test output."] }
+])
+export function listSkills() {
+  return skills.map(({id,name,category,providers,safety,goal})=>({id,name,category,providers,safety,goal}))
+}
+export function getSkill(id) {
+  const skill=skills.find(s=>s.id===id)
+  if(!skill) throw Error("Unknown skill: "+id)
+  return structuredClone(skill)
+}
