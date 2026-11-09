@@ -15,7 +15,7 @@ The checked-in root manifest declares a pnpm workspace with `apps/`, `docs/`, `s
 
 ## Local development
 
-For the 1.3 extension test build, see the [Skills Library and testing guide](docs/skills-library.md)
+For the 1.4 chat-first extension test build, see the [orchestration and UI review](docs/orchestration-and-ui-review.md), [Skills Library guide](docs/skills-library.md)
 and [extension installation instructions](apps/extension/INSTALL.md).
 
 Install a compatible Node.js runtime and pnpm, then run:

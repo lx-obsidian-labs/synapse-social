@@ -4,7 +4,7 @@ Synapse AI is a Chrome/Edge browser extension that automates web pages with AI.
 
 ## Install (from the downloaded ZIP)
 
-1. **Download** `synapse-ai-v1.3.0-test.zip` and **unzip** it. You'll get a folder
+1. **Download** `synapse-ai-v1.4.0-test.zip` and **unzip** it. You'll get a folder
    named `dist` (or `synapse-ai`) containing `manifest.json`.
 2. Open your browser's extensions page:
    - Chrome: `chrome://extensions`
@@ -20,7 +20,7 @@ unavailable or rate-limited, open Settings to configure your own NVIDIA key.
 
 ## Skills Library and Studio
 
-Open **Skills** to browse all 18 built-in workflow adaptations. Enable a playbook
+Open **Tools → Workflow playbooks** to browse all 18 built-in adaptations. Enable a playbook
 to make its guidance available to relevant browser planning turns. Open its
 Studio to generate a text result or continue an interview. Browser workflows can
 be prepared in Chat for review before sending.
@@ -41,7 +41,7 @@ Get a free key at https://build.nvidia.com
 
 ## Requirements
 
-- Google Chrome, Microsoft Edge, or a Chromium browser with the Side Panel API (v114+).
+- Google Chrome, Microsoft Edge, or a Chromium browser with the Side Panel opening API (v116+).
 
 ## Support
 

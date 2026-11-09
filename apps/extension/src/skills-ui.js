@@ -14,14 +14,14 @@
     const stored = await chrome.storage.local.get(api.STORE);
     enabled = api.normalize(stored[api.STORE]);
   } catch (error) { status('Could not load saved skills: ' + error.message); }
-  function choose(item) {
+  function choose(item, reveal = true) {
     if (running) { status('Wait for the current studio result before switching skills.'); return; }
     selected = item;
     $('skill-selected').textContent = item.name;
     $('skill-requirement').textContent = item.requirement || 'Ready for AI-assisted planning and writing. Browser actions use Synapse’s existing engine.';
     $('skill-studio-output').textContent = '';
     $('skill-agent').disabled = item.category !== 'Browser' && item.id !== 'just-scrape';
-    $('skill-task').focus();
+    if (reveal) { $('skill-task').focus(); document.dispatchEvent(new Event('synapse-open-studio')); }
   }
   function render() {
     const query = $('skills-search').value.toLowerCase().trim();
@@ -87,11 +87,12 @@
     if (!task) { status('Describe the browser task first.'); return; }
     document.querySelector('.tab[data-tab="chat"]')?.click();
     const input = $('chat-input');
+    $('chat-mode').value = 'browser';
     input.value = task + '\n\nApply this workflow: ' + selected.guide + '\n' + selected.requirement;
     input.focus();
     status('Browser task prepared in Chat. Review it and press Send to execute.');
   });
-  render(); choose(selected);
+  render(); choose(selected, false);
 })().catch(error => {
   const el = document.getElementById('skills-status'); if (el) el.textContent = 'Skills unavailable: ' + error.message;
 });

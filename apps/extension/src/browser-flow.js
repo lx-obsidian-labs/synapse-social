@@ -38,13 +38,15 @@
     return String(q || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
   function planSearchAction(action, currentUrl) {
-    if (!action || action.type !== 'type' || !/search|query|google or type a url/i.test(String(action.target || ''))) return { status: 'passthrough', action };
-    const provider = providerOf(currentUrl);
+    if (!action || !['type', 'search'].includes(action.type)) return { status: 'passthrough', action };
+    if (action.type === 'type' && !/search|query|google or type a url/i.test(String(action.target || ''))) return { status: 'passthrough', action };
+    const explicit = action.type === 'search' ? String(action.target || '').match(/^(google|youtube|bing|duckduckgo):\s*(.*)$/i) : null;
+    const provider = explicit ? explicit[1].toLowerCase() : (providerOf(currentUrl) || (action.type === 'search' ? 'google' : null));
     if (!provider) return { status: 'passthrough', action };
-    const q = String(action.value || '').trim();
+    const q = action.type === 'search' ? ((explicit ? explicit[2] : String(action.target || '')) + ' ' + String(action.value || '')).replace(/\s+/g, ' ').trim() : String(action.value || '').trim();
     if (!q) return { status: 'passthrough', action };
     const existing = searchQuery(currentUrl);
-    if (existing !== null && normalizeQuery(existing) === normalizeQuery(q))
+    if (providerOf(currentUrl) === provider && existing !== null && normalizeQuery(existing) === normalizeQuery(q))
       return { status: 'already-submitted', action, provider, query: q };
     const host = {google: 'https://www.google.com/search?q=', youtube: 'https://www.youtube.com/results?search_query=', bing: 'https://www.bing.com/search?q=', duckduckgo: 'https://duckduckgo.com/?q='}[provider];
     return { status: 'navigate', provider, query: q, action: {type:'navigate',target:host + encodeURIComponent(q),value:''} };

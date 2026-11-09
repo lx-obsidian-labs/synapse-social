@@ -668,6 +668,15 @@ const BROWSER_TOOLS: Record<string, (args: string[]) => Promise<{ success: boole
     } catch { return { success: false, error: `Failed to download from ${url}. URL may be restricted.` } }
   },
 
+  async get_download_status(args) {
+    const id = Number(args[0])
+    if (!Number.isSafeInteger(id) || id < 0) return { success: false, error: 'Valid download ID required' }
+    const items = await chrome.downloads.search({ id })
+    if (!items.length) return { success: false, error: 'Task download no longer exists' }
+    const item = items[0]
+    return { success: true, result: JSON.stringify({ id: item.id, state: item.state, url: item.url, filename: item.filename, error: item.error || '' }) }
+  },
+
   async list_downloads() {
     try {
       const downloads = await chrome.downloads.search({ limit: 10, orderBy: ['-startTime'] })

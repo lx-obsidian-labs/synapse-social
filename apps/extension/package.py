@@ -10,6 +10,7 @@ REQUIRED = (
     "manifest.json", "background.js", "content.js", "sidepanel.js",
     "shell.js", "popup.js", "sidepanel.html", "popup.html", "browser-flow.js",
     "skills.js", "skills-ui.js", "obsidian.css",
+    "orchestration.js", "retrieval.js",
 )
 
 def main():

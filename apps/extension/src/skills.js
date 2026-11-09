@@ -77,6 +77,7 @@
     const words = String(objective || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 3);
     return catalog.filter(s => normalize(ids).includes(s.id))
       .map((s, index) => ({ s, index, score: words.filter(w => (s.name + ' ' + s.description + ' ' + s.category).toLowerCase().includes(w)).length }))
+      .filter(item => item.score > 0 || (defaults.includes(item.s.id) && /\b(browser|page|tab|navigate|search|read|download|research)\b/i.test(String(objective))))
       .sort((a, b) => b.score - a.score || a.index - b.index).slice(0, limit).map(x => x.s);
   }
   function prompt(ids, objective) {

@@ -18,7 +18,8 @@ test('disabled and unknown playbooks never enter the planner prompt', () => {
 test('enabled matching playbooks retain execution limits and bounded context', () => {
   const selected = skills.select(skills.catalog.map(s => s.id), 'CRXJS Vite builds')
   assert.equal(selected[0].id, 'crxjs')
-  assert.equal(selected.length, 3)
-  assert.match(skills.prompt(['crxjs'], 'migrate'), /not in this extension/)
+  assert.ok(selected.length >= 1 && selected.length <= 3)
+  assert.equal(skills.prompt(['crxjs'], 'Tell me a joke'), '')
+  assert.match(skills.prompt(['crxjs'], 'CRXJS migration'), /not in this extension/)
   assert.match(skills.prompt(['website-to-video'], 'video'), /Do not claim to have rendered/)
 })

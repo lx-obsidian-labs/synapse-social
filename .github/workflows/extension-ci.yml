@@ -42,14 +42,14 @@ jobs:
         run: npm run test:ui
       - name: Validate package
         run: |
-          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('dist/manifest.json'));for(const x of ['background.js','content.js','sidepanel.js','shell.js','browser-flow.js','popup.js','sidepanel.html','popup.html','skills.js','skills-ui.js','obsidian.css'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!==process.env.EXT_VERSION)throw Error('Version mismatch')"
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('dist/manifest.json'));for(const x of ['background.js','content.js','sidepanel.js','shell.js','browser-flow.js','popup.js','sidepanel.html','popup.html','skills.js','skills-ui.js','obsidian.css','orchestration.js','retrieval.js'])if(!fs.existsSync('dist/'+x))throw Error('Missing '+x);if(m.version!==process.env.EXT_VERSION)throw Error('Version mismatch')"
       - name: Verify ZIP structure and integrity
         run: |
           set -euo pipefail
           archive="synapse-ai-v${EXT_VERSION}-test.zip"
           test -s "$archive"
           unzip -t "$archive"
-          for file in manifest.json background.js content.js sidepanel.html sidepanel.js browser-flow.js shell.js popup.html popup.js skills.js skills-ui.js obsidian.css; do
+          for file in manifest.json background.js content.js sidepanel.html sidepanel.js browser-flow.js shell.js popup.html popup.js skills.js skills-ui.js obsidian.css orchestration.js retrieval.js; do
             unzip -Z1 "$archive" | grep -Fxq "$file" || { echo "::error::ZIP missing root-level $file"; exit 1; }
           done
           echo 'Extension ZIP verified: manifest and runtime files are at the archive root.'
@@ -82,5 +82,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="v${EXT_VERSION}-test"
-          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Synapse AI ${EXT_VERSION} — Test build" --notes "Obsidian UI, Skills Library and AI text studio. Skill playbooks are adapted guidance; external CLI and rendering runtimes are not bundled. MCP integrations require endpoint access and any necessary credentials." --prerelease
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Synapse AI ${EXT_VERSION} — Test build" --notes "Chat-first interface with Chat, Tools and Settings only. Direct-reply routing, bounded browser orchestration, observed-link search recovery, Chrome download-state verification and session-local lexical page retrieval. Skills are in Tools; external runtimes are not bundled. Live task success still depends on the configured model and target website." --prerelease
           gh release upload "$tag" "synapse-ai-v${EXT_VERSION}-test.zip" ../../synapse-mcp-companion-test.zip --repo "$GITHUB_REPOSITORY" --clobber

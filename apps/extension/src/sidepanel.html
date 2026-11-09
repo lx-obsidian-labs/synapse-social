@@ -1172,11 +1172,7 @@ html,body{width:100%;height:100%;overflow:hidden!important}
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab active" data-tab="chat"><span class="tab-icon">💬</span>Chat</button>
-    <button class="tab" data-tab="generate"><span class="tab-icon">✨</span>Create</button>
-    <button class="tab" data-tab="content"><span class="tab-icon">🎨</span>Library</button>
     <button class="tab" data-tab="tools"><span class="tab-icon">🛠️</span>Tools</button>
-    <button class="tab" data-tab="skills"><span class="tab-icon">◈</span>Skills</button>
-    <button class="tab" data-tab="memory"><span class="tab-icon">🧠</span>History</button>
     <button class="tab" data-tab="settings"><span class="tab-icon">⚙️</span>Settings</button>
   </div>
 
@@ -1186,9 +1182,8 @@ html,body{width:100%;height:100%;overflow:hidden!important}
     <section class="tab-content" id="tab-skills" aria-label="Skills library">
       <div class="skills-scroll">
         <header class="skills-hero">
-          <div class="skills-eyebrow">LX OBSIDIAN LABS / WORKFLOW ENGINE</div>
-          <h2>Your skills. One workspace.</h2>
-          <p>Enable focused playbooks, build a brief, then put your browser to work.</p>
+          <h2>Workflow playbooks</h2>
+          <p>Enable guidance for relevant tasks, or try a focused writing workflow.</p>
           <span id="skills-count" class="skills-count">Loading skills…</span>
         </header>
         <div class="skills-controls">
@@ -1198,7 +1193,6 @@ html,body{width:100%;height:100%;overflow:hidden!important}
         <p class="skills-note">These are Synapse-authored workflow adaptations with links to their sources. Enabling a playbook adds guidance to relevant agent tasks. External CLIs, native browsers and paid services need separate runtime integrations.</p>
         <div id="skills-grid" class="skills-grid"></div>
         <section class="skill-studio" aria-labelledby="skill-selected">
-          <div class="skills-eyebrow">SKILL STUDIO / AI-ASSISTED TEXT</div>
           <h3 id="skill-selected">Choose a skill</h3>
           <p id="skill-requirement" class="skills-note"></p>
           <label for="skill-task">Task, follow-up, or text to transform</label>
@@ -1253,17 +1247,10 @@ html,body{width:100%;height:100%;overflow:hidden!important}
       </div>
 
       <div class="messages" id="chat-messages">
-        <div class="msg assistant">
-          <div class="msg-avatar">S</div>
-          <div class="msg-bubble">What would you like to do? I can automate browser tasks and work with connected apps.</div>
-        </div>
       </div>
       <div class="suggestions" id="suggestions">
-        <button class="suggestion-chip" data-prompt="Go to supabase.com, open my project, and show me the database tables">🗄️ Supabase</button>
-        <button class="suggestion-chip" data-prompt="Open vercel.com and show me my deployments and latest build status">▲ Vercel</button>
-        <button class="suggestion-chip" data-prompt="Go to cloudflare.com and check my DNS settings">☁️ Cloudflare</button>
-        <button class="suggestion-chip" data-prompt="Research the latest trends in AI and give me a summary">🔍 Research</button>
-        <button class="suggestion-chip" data-prompt="Extract all links and images from this page">📋 Extract</button>
+        <button class="suggestion-chip" data-prompt="Summarize the current page and cite its source URL">Summarize this page</button>
+        <button class="suggestion-chip" data-prompt="Help me draft a concise professional email">Draft an email</button>
       </div>
       <div id="react-progress" style="display:none;padding:6px 12px;border-top:1px solid var(--border);background:var(--surface);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -1275,10 +1262,11 @@ html,body{width:100%;height:100%;overflow:hidden!important}
         </div>
       </div>
       <div class="chat-input-area">
+        <div class="composer-options"><label for="chat-mode">Task mode</label><select id="chat-mode"><option value="auto">Auto</option><option value="reply">Reply only</option><option value="browser">Use browser</option></select><span id="chat-route-status" role="status" aria-live="polite"></span></div>
         <div class="input-wrap">
-          <input type="text" id="chat-input" placeholder="Describe a task for Synapse…" />
+          <textarea id="chat-input" rows="2" maxlength="20000" aria-label="Message Synapse" placeholder="Message Synapse…"></textarea>
           <button id="chat-enhance" class="enhance-btn" title="Enhance your prompt into a reliable, detailed instruction">Refine</button>
-          <button id="chat-send">
+          <button id="chat-send" aria-label="Send message">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
@@ -1863,6 +1851,8 @@ html,body{width:100%;height:100%;overflow:hidden!important}
 </style>
   <script src="browser-flow.js"></script>
   <script src="skills.js"></script>
+  <script src="orchestration.js"></script>
+  <script src="retrieval.js"></script>
   <script src="sidepanel.js"></script>
   <script src="shell.js"></script>
   <script src="skills-ui.js"></script>

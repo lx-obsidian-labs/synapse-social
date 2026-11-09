@@ -824,12 +824,13 @@ const tools: Record<string, ToolFn> = {
     // can target elements resiliently instead of relying on brittle text.
     document.querySelectorAll('input, textarea, [contenteditable="true"], [role="textbox"], [role="searchbox"]').forEach((el) => {
       const e = el as HTMLElement
+      if (!e.getClientRects().length || e.getAttribute('aria-hidden') === 'true') return
       const label = e.id ? (labelMap.get(e.id) || '') : ''
       const ariaLabel = e.getAttribute('aria-label') || ''
       inputs.push({
         type: e.getAttribute('type') || (e.tagName.toLowerCase() === 'textarea' ? 'textarea' : e.getAttribute('role') || 'text'),
         placeholder: e.getAttribute('placeholder') || ariaLabel || e.getAttribute('data-placeholder') || '',
-        enabled: !(e as HTMLInputElement).disabled && !e.getAttribute('aria-disabled'),
+        enabled: !(e as HTMLInputElement).disabled && e.getAttribute('aria-disabled') !== 'true',
         label: label || ariaLabel,
         role: e.getAttribute('role') || e.tagName.toLowerCase(),
         name: e.getAttribute('name') || '',
@@ -840,6 +841,7 @@ const tools: Record<string, ToolFn> = {
     // --- Buttons (include icon-only buttons by aria-label) ---
     document.querySelectorAll('button, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="switch"]').forEach((el) => {
       const e = el as HTMLElement
+      if (!e.getClientRects().length || e.getAttribute('aria-hidden') === 'true') return
       const text = e.textContent?.trim() || e.getAttribute('aria-label') || e.getAttribute('title') || ''
       if (text || e.getAttribute('aria-label')) {
         buttons.push({
@@ -861,10 +863,11 @@ const tools: Record<string, ToolFn> = {
 
     // --- Links ---
     document.querySelectorAll('a[href]').forEach((a) => {
+      if (!(a as HTMLElement).getClientRects().length) return
       const href = (a as HTMLAnchorElement).href
       const text = a.textContent?.trim() || a.getAttribute('aria-label') || ''
       if (href && !href.startsWith('javascript:') && !href.startsWith('#') && text) {
-        links.push({ text: text.slice(0, 80), href: href.slice(0, 120) })
+        links.push({ text: text.replace(/\s+/g, ' ').slice(0, 320), href: href.slice(0, 2048), download: a.getAttribute('download') !== null })
       }
     })
 
@@ -873,7 +876,7 @@ const tools: Record<string, ToolFn> = {
     if (/(^|\.)google\./.test(location.hostname) && location.pathname === '/search') {
       const results = Array.from(document.querySelectorAll<HTMLAnchorElement>('#search a[href]'))
         .filter(a => a.querySelector('h3') && /^https?:/.test(a.href))
-        .map(a => ({ text: (a.querySelector('h3')?.textContent || '').trim().slice(0, 120), href: a.href.slice(0, 400) }))
+        .map(a => ({ text: (a.querySelector('h3')?.textContent || '').trim().slice(0, 160), href: a.href.slice(0, 2048) }))
       const seen = new Set<string>()
       const ordered = [...results, ...links].filter(item => {
         if (!item.text || seen.has(item.href)) return false
@@ -929,6 +932,8 @@ const tools: Record<string, ToolFn> = {
     const head = bodyText.slice(0, 900)
     const tail = bodyText.length > 900 ? '\n…\n' + bodyText.slice(-2000) : ''
     const textSummary = (head + tail)
+    const contentRoot = document.querySelector<HTMLElement>('main, article, [role="main"]') || document.body
+    const contentText = contentRoot.innerText.slice(0, 24000)
 
     // --- Loading / Streaming ---
     const loading = document.querySelector('[aria-busy="true"], .loading, .spinner, [role="progressbar"], .progress-bar') !== null
@@ -947,10 +952,11 @@ const tools: Record<string, ToolFn> = {
         loading,
         streaming,
         textSummary: textSummary.slice(0, 3200),
+        contentText,
         accessibilitySnapshot: groundedSnapshot(sig),
         inputs: inputs.slice(0, 12),
         buttons: buttons.slice(0, 20),
-        links: links.slice(0, 20),
+        links: links.slice(0, 100),
         headings: headings.slice(0, 8),
         selects: selects.slice(0, 6),
         dialogs: dialogs.slice(0, 3),

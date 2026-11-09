@@ -1,4 +1,4 @@
-# Synapse 1.3 test build: Skills Library
+# Synapse 1.4 test build: Workflow playbooks
 
 ## What ships
 
@@ -6,7 +6,7 @@ The extension contains 18 independently named, Synapse-authored workflow playboo
 They are reviewed summaries and adaptations with source links, not copies of the
 upstream skill packages or their native executables.
 
-- **Skills** opens a searchable, category-filtered library. Switches persist in
+- **Tools → Workflow playbooks** opens a searchable, category-filtered library. Switches persist in
   `chrome.storage.local` under `synapse_skills_v1`.
 - Up to three enabled playbooks, ranked against the objective, enter each browser
   planning turn. Disabling every playbook produces no skill prompt context.
@@ -89,8 +89,9 @@ search/filtering, actual planner prompt inclusion, browser-task preparation,
 this is not a live NVIDIA integration test. MCP protocol tests use mock HTTP
 responses, not authenticated third-party accounts.
 
-Local verification for this build: 22 regression tests and 3 real-extension UI
-tests passed. An additional live probe using the transport discovered 2 Context7
+The earlier 1.3 build passed 22 regression tests and 3 real-extension UI tests.
+The 1.4 suite adds orchestration, content-awareness and download-state regressions.
+An additional live probe during the 1.3 work discovered 2 Context7
 tools and 4 Hugging Face tools. The latest DeepWiki probe failed at the network
 layer; its current availability is not established. GitHub and 1ClickWebsite
 authenticated calls and the live AI text-generation service were not tested.
@@ -101,11 +102,11 @@ publishes a versioned test prerelease after its checks pass.
 
 ## Test in Chrome or Edge
 
-1. Extract `synapse-ai-v1.3.0-test.zip` into a new folder.
+1. Extract `synapse-ai-v1.4.0-test.zip` into a new folder.
 2. Open `chrome://extensions` or `edge://extensions`, enable Developer mode and
    choose **Load unpacked**. Select the extracted folder containing `manifest.json`.
-3. Open Synapse, complete or skip setup, then open **Skills**.
+3. Open Synapse, complete or skip setup, then open **Tools → Workflow playbooks**.
 4. Try Grill Me with a product idea, or Caveman Compress with supplied text.
 5. Try Use My Browser, prepare a current-page summary task, then review and send
    it from Chat. Configure AI in Settings if the shared service is unavailable.
-6. In Settings, enable DeepWiki and choose Tools to check real endpoint discovery.
+6. In **Settings → Connected apps**, enable DeepWiki and choose Tools to check endpoint discovery.
