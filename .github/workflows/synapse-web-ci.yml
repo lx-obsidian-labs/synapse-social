@@ -1,0 +1,36 @@
+name: Synapse Chat-First Web CI
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/synapse-web-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/synapse-web-ci.yml'
+permissions:
+  contents: read
+jobs:
+  web-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck web app
+        run: pnpm --filter synapse-web typecheck
+      - name: Build web app
+        run: pnpm --filter synapse-web build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - name: Check local companion syntax
+        run: node --check apps/mcp-companion/index.mjs
