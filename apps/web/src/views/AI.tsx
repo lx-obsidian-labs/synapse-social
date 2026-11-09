@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ArrowUp, Bot, CircleHelp, Globe2, Menu, MessageSquarePlus, PlugZap, Settings2, ShieldCheck, Trash2, X } from "lucide-react"
+import { ArrowUp, Bot, Globe2, Menu, MessageSquarePlus, PlugZap, Settings2, ShieldCheck, Trash2, X } from "lucide-react"
 
 type Message = { id: string; role: "user" | "assistant"; content: string }
 type Thread = { id: string; title: string; messages: Message[]; updatedAt: number }
@@ -17,6 +17,17 @@ const providers = [
   { name: "LinkedIn", type: "Local account", detail: "Profiles, jobs and networking" },
   { name: "Firecrawl", type: "Hosted web", detail: "Search, scrape and crawl" },
   { name: "Browserbase", type: "Optional cloud", detail: "Remote browser sessions" },
+]
+const availableSkills = [
+  ["LinkedIn profile audit", "Review engineering positioning and prepare improvements"],
+  ["Job research", "Compare international engineering opportunities"],
+  ["Website audit", "Inspect accessibility, performance and broken flows"],
+  ["Competitor research", "Compare businesses using public sources"],
+  ["Browser workflow", "Plan and verify approved browser actions"],
+  ["Structured extraction", "Turn web pages into structured evidence"],
+  ["Report builder", "Prepare source-grounded research summaries"],
+  ["Social content", "Draft content for approval"],
+  ["Release QA", "Verify critical paths before deployment"],
 ]
 function newThread(): Thread {
   return { id: crypto.randomUUID(), title: "New conversation", messages: [welcome], updatedAt: Date.now() }
@@ -162,6 +173,9 @@ export function AIPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               {providers.map(p => <div key={p.name} className="rounded-2xl border bg-card p-4"><div className="mb-2 flex items-center gap-2"><Globe2 size={17} className="text-primary"/><strong>{p.name}</strong></div><p className="text-xs text-muted-foreground">{p.type} · {p.detail}</p><span className="mt-4 inline-flex text-xs text-muted-foreground"><ShieldCheck size={14} className="mr-1"/> Setup required</span></div>)}
             </div>
+            <h3 className="mt-8 mb-3 text-sm font-semibold">Skills available for connected agents</h3>
+            <div className="grid gap-2 sm:grid-cols-2">{availableSkills.map(([name, detail]) => <div key={name} className="rounded-xl border bg-card px-4 py-3"><strong className="text-sm">{name}</strong><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>)}</div>
+            <p className="mt-6 text-xs text-muted-foreground">Discover additional MCP integrations at <a href="https://mcpservers.org/" target="_blank" rel="noopener noreferrer" className="underline">mcpservers.org</a> or the <a href="https://registry.modelcontextprotocol.io/" target="_blank" rel="noopener noreferrer" className="underline">official MCP Registry</a>. Listings require review before installation.</p>
             <p className="mt-6 text-sm text-muted-foreground">Run the MCP companion locally and follow <code>docs/mcp-integrations.md</code> for approved server configuration and permission boundaries.</p>
             <button onClick={() => setConnections(false)} className="mt-5 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">Back to chat</button>
           </div>
