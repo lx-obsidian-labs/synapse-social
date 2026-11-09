@@ -4,6 +4,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import readline from 'node:readline'
+import { listProviders, providerConfig } from './providers.mjs'
+import { listSkills, getSkill } from './skills.mjs'
 const rl = readline.createInterface({input:process.stdin,terminal:false})
 const sessions = new Map()
 const respond = (id, result, error) => process.stdout.write(JSON.stringify({id,...(error?{error:String(error)}:{result})}) + String.fromCharCode(10))
@@ -13,11 +15,12 @@ async function connect(name, config) {
   const client = new Client({name:'synapse-companion',version:'0.1.0'})
   let transport
   if (config.transport === 'stdio') {
-    if (!config.command || !Array.isArray(config.args)) throw Error('Missing command/args')
+    if (!config.command || !Array.isArray(config.args) || !config.args.every(a=>typeof a==='string')) throw Error('Missing or invalid command/args')
     transport = new StdioClientTransport({command:config.command,args:config.args,env:{...process.env,...config.env}})
   } else if (config.transport === 'http') {
     const url = new URL(config.url)
-    if (url.protocol !== 'https:' && !['localhost','127.0.0.1'].includes(url.hostname)) throw Error('HTTPS required for remote MCP')
+    if (url.username || url.password || url.hash) throw Error('Credentials and fragments not permitted in URL')
+    if (url.protocol !== 'https:' && !['localhost','127.0.0.1','[::1]'].includes(url.hostname)) throw Error('HTTPS required for remote MCP')
     transport = new StreamableHTTPClientTransport(url)
   } else throw Error('Unsupported MCP transport')
   await client.connect(transport)
@@ -29,6 +32,14 @@ rl.on('line',async line=>{
   try {
     req=JSON.parse(line)
     const {id,method,name}=req
+    if(method==='listProviders') return respond(id,listProviders())
+    if(method==='listSkills') return respond(id,listSkills())
+    if(method==='getSkill') return respond(id,getSkill(req.skill))
+    if(method==='connectProvider') {
+      const providerId=String(req.provider||'')
+      if(!req.approved) throw Error('Connecting a provider requires explicit human approval')
+      return respond(id,await connect(name||providerId,providerConfig(providerId)))
+    }
     if(method==='connect') return respond(id,await connect(name,req.config))
     if(method==='connections') return respond(id,[...sessions.keys()])
     const client=sessions.get(name)
