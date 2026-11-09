@@ -101,3 +101,49 @@ A call carrying `approved:true` is **not** proof the human approved it. A future
 ## Current scope and limitations
 
 This branch implements a **chat-first web shell** and general-purpose assistant prompt. It creates an integration guide and provider catalogue, **not** an end-to-end tool-calling agent. To claim functional integrations, implement the secure local app-to-companion bridge, action-approval UI and automated integration tests described above. Do not deploy this branch as a full autonomous agent until those checks pass.
+
+
+## Integrated provider and skills catalogue (current feature branch)
+
+The desktop MCP companion now has a built-in, curated provider registry in `apps/mcp-companion/providers.mjs` and reusable task skills in `apps/mcp-companion/skills.mjs`. No unreviewed remote skill code is downloaded or executed. They are guidance and prerequisites; actual tool invocation still needs a trusted local client, authentication when required, and approval.
+
+The companion accepts these JSON-lines requests:
+
+```json
+{"id":"10","method":"listProviders"}
+{"id":"11","method":"listSkills"}
+{"id":"12","method":"getSkill","skill":"linkedin-profile-audit"}
+{"id":"13","method":"connectProvider","name":"linkedin","provider":"linkedin","approved":true}
+{"id":"14","method":"listTools","name":"linkedin"}
+{"id":"15","method":"disconnect","name":"linkedin"}
+```
+
+The `approved` field is checked by the companion but **not cryptographically bound to a user**; never expose this stdin interface to untrusted web traffic. A future UI-to-companion bridge must enforce interactive approvals and secure identity.
+
+Available skills:
+- linkedin-profile-audit — profile audit with verified observations
+- job-research — job discovery and ranking
+- website-audit — site performance, accessibility and functionality
+- competitive-intelligence — public competitor comparison
+- browser-workflow — controlled browser actions
+- structured-extraction — schema-driven website scraping
+- document-report — source-grounded report drafts
+- social-content — draft-first publishing workflow
+- release-qa — pre-release regression checks
+
+Run local catalogue tests:
+
+```bash
+node --test apps/mcp-companion/catalog.test.mjs
+```
+
+These tests validate metadata and templates; they do not launch Chrome, consume Firecrawl credits, authenticate to LinkedIn, or test cloud sessions. Real integration tests must be done after accounts and tools are connected.
+
+### Research-based next skills worth adding
+
+- `agent-browser` from https://github.com/vercel-labs/agent-browser — consider as an alternative browser workflow driver, not a redundant always-on MCP.
+- `web-design-guidelines` and React best practices from https://github.com/vercel-labs/agent-skills — use to enrich UI audits and code reviews; review and pin content first.
+- Agent Skills discovery from https://skills.sh/ — curate reviewed skill instructions rather than installing from arbitrary sources.
+- A workflow/retry skill for long-lived jobs, bounded by budget and explicit user action.
+
+Do not run third-party skill shell commands automatically merely because an agent recommended them.
